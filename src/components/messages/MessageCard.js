@@ -75,7 +75,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      <div className={clsx('flex max-w-2xl', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
+      <div className={clsx('flex', isEditing ? 'max-w-4xl' : 'max-w-2xl', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
         {/* Avatar */}
         <div className={clsx('flex-shrink-0', isOwnMessage ? 'ml-3' : 'mr-3')}>
           {showAvatar ? (

@@ -19,9 +19,9 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
       editableMaxHeight: '100px',
     },
     large: {
-      containerMinHeight: '80px',
-      editableMinHeight: '60px',
-      editableMaxHeight: '200px',
+      containerMinHeight: '48px',
+      editableMinHeight: '20px',
+      editableMaxHeight: '100px',
     }
   };
 
