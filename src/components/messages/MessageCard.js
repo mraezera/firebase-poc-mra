@@ -7,6 +7,7 @@ import RichTextEditor, {
   slateToJSON,
   slateToPlainText
 } from './RichTextEditor';
+import MessageStatusIndicator from '../common/MessageStatusIndicator';
 
 function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit }) {
   const [showActions, setShowActions] = useState(false);
@@ -224,13 +225,22 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
               )}
             </div>
 
-            {/* Timestamp and Edited Label */}
+            {/* Timestamp, Status, and Edited Label */}
             <div className="flex items-center space-x-2 mt-1 px-2">
               <span className="text-xs text-gray-500">
                 {formatTimestamp(message.createdAt)}
               </span>
               {message.editedAt && (
                 <span className="text-xs text-gray-500 italic">Edited</span>
+              )}
+              {/* Show status indicator for own messages */}
+              {isOwnMessage && (
+                <MessageStatusIndicator
+                  status={message.status}
+                  readBy={message.readBy}
+                  deliveredTo={message.deliveredTo}
+                  currentUserId={currentUserId}
+                />
               )}
             </div>
           </div>

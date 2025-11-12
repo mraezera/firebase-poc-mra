@@ -48,7 +48,66 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       }
     };
 
+    // Mark messages as delivered (when they appear in view)
+    const markMessagesAsDelivered = async () => {
+      try {
+        const undeliveredMessages = messages.filter(msg =>
+          msg.senderId !== user.uid &&
+          (!msg.deliveredTo || !msg.deliveredTo[user.uid])
+        );
+
+        if (undeliveredMessages.length > 0) {
+          const batch = [];
+          undeliveredMessages.forEach(msg => {
+            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
+            batch.push(
+              updateDoc(messageRef, {
+                [`deliveredTo.${user.uid}`]: serverTimestamp(),
+                status: 'delivered'
+              })
+            );
+          });
+
+          await Promise.all(batch);
+        }
+      } catch (error) {
+        console.error('Error marking messages as delivered:', error);
+      }
+    };
+
+    // Mark messages as read
+    const markMessagesAsRead = async () => {
+      try {
+        const unreadMessages = messages.filter(msg =>
+          msg.senderId !== user.uid &&
+          (!msg.readBy || !msg.readBy[user.uid])
+        );
+
+        if (unreadMessages.length > 0) {
+          const batch = [];
+          unreadMessages.forEach(msg => {
+            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
+            batch.push(
+              updateDoc(messageRef, {
+                [`readBy.${user.uid}`]: serverTimestamp()
+              })
+            );
+          });
+
+          await Promise.all(batch);
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+
     markAsRead();
+
+    // Mark messages as delivered and read when they're loaded and when new messages arrive
+    if (messages.length > 0) {
+      markMessagesAsDelivered();
+      markMessagesAsRead();
+    }
 
     // Subscribe to typing indicators
     const unsubscribeTyping = presenceService.subscribeToTypingIndicators(
@@ -61,7 +120,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       unsubscribe();
       unsubscribeTyping();
     };
-  }, [conversation, user.uid]);
+  }, [conversation, user.uid, messages]);
 
   const handleSendMessage = async (messageData) => {
     if (!conversation) return;
@@ -91,7 +150,13 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           senderId: replyToMessage.senderId,
           senderName: replyToMessage.senderName
         } : null,
-        attachments: []
+        attachments: [],
+        // Message status tracking
+        status: 'sent',
+        readBy: {},
+        deliveredTo: {
+          [user.uid]: serverTimestamp() // Mark as delivered to sender immediately
+        }
       };
 
       await addDoc(messagesRef, newMessage);
