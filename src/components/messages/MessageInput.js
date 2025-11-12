@@ -9,6 +9,7 @@ import RichTextEditor, {
 
 function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
   const [editorValue, setEditorValue] = useState(() => createEmptySlateValue());
+  const [editorKey, setEditorKey] = useState(0);
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
@@ -23,8 +24,9 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
         replyTo
       });
 
-      // Reset editor
+      // Reset editor by changing key (forces remount)
       setEditorValue(createEmptySlateValue());
+      setEditorKey(prev => prev + 1);
 
       // Clear reply
       if (onCancelReply) {
@@ -68,6 +70,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
             onChange={setEditorValue}
             onSubmit={handleSubmit}
             placeholder="Type a message... (Ctrl+B for bold, Ctrl+I for italic)"
+            editorKey={editorKey}
           />
         </div>
 

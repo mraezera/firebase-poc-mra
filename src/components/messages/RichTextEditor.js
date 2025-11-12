@@ -3,12 +3,12 @@ import { createEditor, Editor } from 'slate';
 import { Slate, Editable, withReact } from 'slate-react';
 import clsx from 'clsx';
 
-const RichTextEditor = ({ value, onChange, onSubmit, placeholder }) => {
-  const editor = useMemo(() => withReact(createEditor()), []);
+const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) => {
+  const editor = useMemo(() => withReact(createEditor()), [editorKey]);
   const [isFocused, setIsFocused] = useState(false);
 
   // Ensure value is never undefined
-  const safeValue = value || createEmptySlateValue();
+  const initialValue = value || createEmptySlateValue();
 
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const renderElement = useCallback((props) => <Element {...props} />, []);
@@ -44,7 +44,12 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder }) => {
       )}
       style={{ minHeight: '48px' }}
     >
-      <Slate editor={editor} value={safeValue} onChange={onChange}>
+      <Slate
+        key={editorKey}
+        editor={editor}
+        initialValue={initialValue}
+        onChange={onChange}
+      >
         <Editable
           renderLeaf={renderLeaf}
           renderElement={renderElement}

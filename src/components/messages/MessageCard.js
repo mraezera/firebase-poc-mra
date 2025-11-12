@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import RichTextRenderer from './RichTextRenderer';
@@ -14,6 +14,13 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
   const [editValue, setEditValue] = useState(() =>
     isEditing ? jsonToSlate(message.text) : null
   );
+
+  // Update editValue when entering edit mode
+  useEffect(() => {
+    if (isEditing) {
+      setEditValue(jsonToSlate(message.text));
+    }
+  }, [isEditing, message.text]);
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     try {
@@ -105,6 +112,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
                 onChange={setEditValue}
                 onSubmit={handleSave}
                 placeholder="Edit message..."
+                editorKey={`edit-${message.id}`}
               />
               <div className="flex items-center space-x-2">
                 <button
