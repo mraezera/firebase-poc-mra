@@ -51,7 +51,13 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
     onDelete(message.id, deleteForEveryone);
   };
 
-  if (message.deletedAt && !message.deletedFor.includes(currentUserId)) {
+  // Hide message if deleted for current user
+  if (message.deletedFor && message.deletedFor.includes(currentUserId)) {
+    return null;
+  }
+
+  // Show "deleted" message if deleted for everyone
+  if (message.deletedAt) {
     return (
       <div className={clsx('flex', isOwnMessage ? 'justify-end' : 'justify-start')}>
         <div className="max-w-md px-4 py-2 rounded-message bg-gray-100 border border-gray-200">
