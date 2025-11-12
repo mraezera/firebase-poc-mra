@@ -95,7 +95,7 @@ class PresenceService {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     // Store cleanup function
-    this.cleanup = () => {
+    this.disconnectCleanup = () => {
       clearInterval(updateInterval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -192,8 +192,8 @@ class PresenceService {
       await this.setUserOffline(this.currentUser.uid);
     }
 
-    if (this.cleanup) {
-      this.cleanup();
+    if (this.disconnectCleanup) {
+      this.disconnectCleanup();
     }
 
     if (this.unsubscribePresence) {
