@@ -31,15 +31,23 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
   const renderElement = useCallback((props) => <Element {...props} />, []);
 
   // Handle clicking anywhere in the container to focus the editor
-  const handleContainerClick = useCallback(() => {
-    try {
-      ReactEditor.focus(editor);
-    } catch (e) {
-      // Fallback if ReactEditor.focus fails
-      if (editableRef.current) {
-        editableRef.current.focus();
+  const handleContainerClick = useCallback((e) => {
+    e.stopPropagation();
+    // Use setTimeout to ensure the editor is ready
+    setTimeout(() => {
+      try {
+        ReactEditor.focus(editor);
+      } catch (e) {
+        // Fallback if ReactEditor.focus fails
+        try {
+          if (editableRef.current) {
+            editableRef.current.focus();
+          }
+        } catch (err) {
+          console.error('Failed to focus editor:', err);
+        }
       }
-    }
+    }, 0);
   }, [editor]);
 
   const handleKeyDown = (event) => {

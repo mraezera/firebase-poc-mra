@@ -75,7 +75,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
       onMouseEnter={() => setShowActions(true)}
       onMouseLeave={() => setShowActions(false)}
     >
-      <div className={clsx('flex', isEditing ? 'max-w-4xl' : 'max-w-2xl', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
+      <div className={clsx('flex', isEditing ? 'max-w-6xl w-full' : 'max-w-2xl', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
         {/* Avatar */}
         <div className={clsx('flex-shrink-0', isOwnMessage ? 'ml-3' : 'mr-3')}>
           {showAvatar ? (
@@ -109,7 +109,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
             <div className={clsx('flex items-center gap-2', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
               {/* Message Content */}
               {isEditing ? (
-                <div className="flex-1 space-y-2">
+                <div className="w-full space-y-2">
                   <RichTextEditor
                     value={editValue}
                     onChange={setEditValue}
