@@ -32,22 +32,27 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
 
   // Handle clicking anywhere in the container to focus the editor
   const handleContainerClick = useCallback((e) => {
+    e.preventDefault();
     e.stopPropagation();
-    // Use setTimeout to ensure the editor is ready
-    setTimeout(() => {
+
+    // Use requestAnimationFrame for better timing
+    requestAnimationFrame(() => {
       try {
         ReactEditor.focus(editor);
-      } catch (e) {
-        // Fallback if ReactEditor.focus fails
+        // Move cursor to the end of the content
+        const end = Editor.end(editor, []);
+        editor.selection = { anchor: end, focus: end };
+      } catch (err) {
+        // Fallback to direct DOM focus
         try {
           if (editableRef.current) {
             editableRef.current.focus();
           }
-        } catch (err) {
-          console.error('Failed to focus editor:', err);
+        } catch (e) {
+          console.error('Failed to focus editor:', e);
         }
       }
-    }, 0);
+    });
   }, [editor]);
 
   const handleKeyDown = (event) => {
@@ -75,7 +80,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
 
   return (
     <div
-      onClick={handleContainerClick}
+      onMouseDown={handleContainerClick}
       className={clsx(
         'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
         isFocused && 'ring-2 ring-primary border-transparent'

@@ -109,7 +109,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
             <div className={clsx('flex items-center gap-2', isOwnMessage ? 'flex-row-reverse' : 'flex-row')}>
               {/* Message Content */}
               {isEditing ? (
-                <div className="w-full space-y-2">
+                <div className="w-full space-y-2" style={{ minWidth: '320px' }}>
                   <RichTextEditor
                     value={editValue}
                     onChange={setEditValue}
