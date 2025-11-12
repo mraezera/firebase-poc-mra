@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, getDocs } from 'firebase/firestore';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ConversationCard from './ConversationCard';
+import NewConversationModal from './NewConversationModal';
 
 function ConversationList({ user, selectedConversation, onSelectConversation }) {
   const [conversations, setConversations] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -42,78 +43,8 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
     return () => unsubscribe();
   }, [user]);
 
-  const createNewConversation = async () => {
-    const email = prompt('Enter email address to chat with:');
-    if (!email || !email.trim()) return;
-
-    setCreating(true);
-
-    try {
-      // Find user by email
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', email.trim().toLowerCase()));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        alert('User not found with that email address. They may need to sign in first.');
-        setCreating(false);
-        return;
-      }
-
-      const otherUser = querySnapshot.docs[0];
-      const otherUserData = otherUser.data();
-      const otherUserId = otherUser.id;
-
-      // Check if user is trying to chat with themselves
-      if (otherUserId === user.uid) {
-        alert('You cannot create a conversation with yourself.');
-        setCreating(false);
-        return;
-      }
-
-      // Check if conversation already exists
-      const existingConv = conversations.find(conv =>
-        conv.type === 'direct' &&
-        conv.participants.includes(otherUserId)
-      );
-
-      if (existingConv) {
-        alert('A conversation with this user already exists.');
-        onSelectConversation(existingConv);
-        setCreating(false);
-        return;
-      }
-
-      // Create new conversation
-      const newConversation = {
-        type: 'direct',
-        participants: [user.uid, otherUserId],
-        participantsData: {
-          [user.uid]: {
-            displayName: user.displayName,
-            photoURL: user.photoURL || '',
-            role: 'member'
-          },
-          [otherUserId]: {
-            displayName: otherUserData.displayName || 'User',
-            photoURL: otherUserData.photoURL || '',
-            role: 'member'
-          }
-        },
-        createdBy: user.uid,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        lastMessage: null
-      };
-
-      await addDoc(collection(db, 'conversations'), newConversation);
-      alert('Conversation created successfully!');
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      alert('Error creating conversation: ' + error.message);
-    } finally {
-      setCreating(false);
-    }
+  const handleConversationCreated = (conversation) => {
+    onSelectConversation(conversation);
   };
 
   const filteredConversations = conversations.filter(conv => {
@@ -139,9 +70,8 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold text-gray-900">Messages</h2>
           <button
-            onClick={createNewConversation}
-            disabled={creating}
-            className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded-full flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => setIsModalOpen(true)}
+            className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded-full flex items-center justify-center transition-colors"
             title="New conversation"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,6 +125,15 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
           </div>
         )}
       </div>
+
+      {/* New Conversation Modal */}
+      <NewConversationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        user={user}
+        conversations={conversations}
+        onConversationCreated={handleConversationCreated}
+      />
     </div>
   );
 }
