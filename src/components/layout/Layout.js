@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import ConversationList from '../conversations/ConversationList';
 import ConversationArea from '../messages/ConversationArea';
+import ConversationDetails from '../conversations/ConversationDetails';
 
 function Layout({ user }) {
   const [selectedConversation, setSelectedConversation] = useState(null);
@@ -26,30 +27,14 @@ function Layout({ user }) {
         />
       </div>
 
-      {/* Right Panel - Info/Details (initially hidden) */}
-      {showRightPanel && (
-        <div className="w-80 bg-background-card border-l border-gray-200 flex-shrink-0">
-          <div className="p-4">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">
-              Conversation Details
-            </h3>
-            {selectedConversation && (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">Conversation Name</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedConversation.name}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Participants</p>
-                  <p className="font-medium text-gray-900">
-                    {selectedConversation.participants?.length || 0} members
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
+      {/* Right Panel - Conversation Details */}
+      {showRightPanel && selectedConversation && (
+        <div className="w-80 bg-background-card flex-shrink-0 h-full overflow-hidden">
+          <ConversationDetails
+            conversation={selectedConversation}
+            currentUser={user}
+            onClose={() => setShowRightPanel(false)}
+          />
         </div>
       )}
     </div>
