@@ -9,6 +9,7 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -47,11 +48,34 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
     onSelectConversation(conversation);
   };
 
-  const filteredConversations = conversations.filter(conv => {
-    if (!searchQuery) return true;
-    const name = conv.name || getConversationName(conv, user.uid);
-    return name.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  const filteredConversations = conversations
+    .filter(conv => {
+      // Filter by archive status
+      const isArchived = conv.userPreferences?.[user.uid]?.archived || false;
+      if (showArchived) {
+        return isArchived;
+      } else {
+        if (isArchived) return false;
+      }
+
+      // Filter by search query
+      if (!searchQuery) return true;
+      const name = conv.name || getConversationName(conv, user.uid);
+      return name.toLowerCase().includes(searchQuery.toLowerCase());
+    })
+    .sort((a, b) => {
+      // Sort by pinned status first
+      const aPinned = a.userPreferences?.[user.uid]?.pinned || false;
+      const bPinned = b.userPreferences?.[user.uid]?.pinned || false;
+
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+
+      // Then sort by updatedAt (already sorted from Firebase, but maintain order)
+      const aTime = a.updatedAt?.toMillis() || 0;
+      const bTime = b.updatedAt?.toMillis() || 0;
+      return bTime - aTime;
+    });
 
   const getConversationName = (conversation, currentUserId) => {
     if (conversation.type === 'group') {
@@ -63,21 +87,49 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
     return otherUserData?.displayName || 'Unknown User';
   };
 
+  const archivedCount = conversations.filter(conv => conv.userPreferences?.[user.uid]?.archived).length;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold text-gray-900">Messages</h2>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded-full flex items-center justify-center transition-colors"
-            title="New conversation"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-          </button>
+          <div className="flex items-center space-x-2">
+            <h2 className="text-xl font-bold text-gray-900">
+              {showArchived ? 'Archived' : 'Messages'}
+            </h2>
+            {archivedCount > 0 && !showArchived && (
+              <button
+                onClick={() => setShowArchived(true)}
+                className="px-2 py-0.5 text-xs bg-gray-200 text-gray-700 rounded-full hover:bg-gray-300 transition-colors"
+                title="View archived conversations"
+              >
+                {archivedCount} archived
+              </button>
+            )}
+          </div>
+          <div className="flex items-center space-x-2">
+            {showArchived && (
+              <button
+                onClick={() => setShowArchived(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Back to messages"
+              >
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </button>
+            )}
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="w-8 h-8 bg-primary hover:bg-primary-dark text-white rounded-full flex items-center justify-center transition-colors"
+              title="New conversation"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Search Bar */}

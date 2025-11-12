@@ -131,6 +131,55 @@ function ConversationDetails({ conversation, currentUser, onClose }) {
     }
   };
 
+  const handleTogglePin = async () => {
+    try {
+      const conversationRef = doc(db, 'conversations', conversation.id);
+      const isPinned = conversation.userPreferences?.[currentUser.uid]?.pinned || false;
+
+      await updateDoc(conversationRef, {
+        [`userPreferences.${currentUser.uid}.pinned`]: !isPinned,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      alert('Error updating conversation: ' + error.message);
+    }
+  };
+
+  const handleToggleMute = async () => {
+    try {
+      const conversationRef = doc(db, 'conversations', conversation.id);
+      const isMuted = conversation.userPreferences?.[currentUser.uid]?.muted || false;
+
+      await updateDoc(conversationRef, {
+        [`userPreferences.${currentUser.uid}.muted`]: !isMuted,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error toggling mute:', error);
+      alert('Error updating conversation: ' + error.message);
+    }
+  };
+
+  const handleToggleArchive = async () => {
+    try {
+      const conversationRef = doc(db, 'conversations', conversation.id);
+      const isArchived = conversation.userPreferences?.[currentUser.uid]?.archived || false;
+
+      await updateDoc(conversationRef, {
+        [`userPreferences.${currentUser.uid}.archived`]: !isArchived,
+        updatedAt: serverTimestamp()
+      });
+
+      if (!isArchived) {
+        onClose(); // Close panel when archiving
+      }
+    } catch (error) {
+      console.error('Error toggling archive:', error);
+      alert('Error updating conversation: ' + error.message);
+    }
+  };
+
   return (
     <div className="h-full flex flex-col bg-white border-l border-gray-200">
       {/* Header */}
@@ -280,6 +329,63 @@ function ConversationDetails({ conversation, currentUser, onClose }) {
                 )}
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Conversation Actions */}
+        <div className="pt-4 border-t border-gray-200">
+          <h4 className="text-sm font-semibold text-gray-700 uppercase mb-3">
+            Actions
+          </h4>
+          <div className="space-y-2">
+            <button
+              onClick={handleTogglePin}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <svg className="w-5 h-5 text-gray-600" fill={conversation.userPreferences?.[currentUser.uid]?.pinned ? "currentColor" : "none"} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span className="font-medium text-gray-900">
+                  {conversation.userPreferences?.[currentUser.uid]?.pinned ? 'Unpin' : 'Pin'} Conversation
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={handleToggleMute}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                {conversation.userPreferences?.[currentUser.uid]?.muted ? (
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" clipRule="evenodd" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+                  </svg>
+                )}
+                <span className="font-medium text-gray-900">
+                  {conversation.userPreferences?.[currentUser.uid]?.muted ? 'Unmute' : 'Mute'} Notifications
+                </span>
+              </div>
+            </button>
+
+            <button
+              onClick={handleToggleArchive}
+              className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <div className="flex items-center space-x-3">
+                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                <span className="font-medium text-gray-900">
+                  {conversation.userPreferences?.[currentUser.uid]?.archived ? 'Unarchive' : 'Archive'} Conversation
+                </span>
+              </div>
+            </button>
           </div>
         </div>
 
