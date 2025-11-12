@@ -1,10 +1,10 @@
-﻿import React from 'react';
+import React from 'react';
 
 const Button = ({ onClick = null, children = null }) => {
   return (
     <button
       onClick={onClick}
-      className="w-full bg-[#036100] text-white font-semibold py-3 px-6 rounded-lg hover:bg-[#034A00] transform hover:scale-105 transition-all duration-200 shadow-lg hover:shadow-xl"
+      className="w-full bg-primary text-white font-semibold py-2.5 px-5 rounded-lg hover:bg-primary-dark transition-colors duration-200"
     >
       {children}
     </button>
