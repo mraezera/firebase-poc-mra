@@ -10,11 +10,16 @@ import RichTextEditor, {
 import MessageStatusIndicator from '../common/MessageStatusIndicator';
 import MessageReactions from './MessageReactions';
 import EmojiPicker from '../common/EmojiPicker';
+import ImageViewerModal from './ImageViewerModal';
+import LinkPreview from './LinkPreview';
+import HighlightedText from './HighlightedText';
 
-function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit, onReact }) {
+function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit, onReact, onPin, onForward, searchQuery, isHighlighted }) {
   const [showActions, setShowActions] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [editValue, setEditValue] = useState(() =>
     isEditing ? jsonToSlate(message.text) : null
   );
@@ -73,6 +78,14 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
       onReact(message.id, emoji, 'remove');
     }
   };
+
+  const handleOpenImageViewer = (index) => {
+    setSelectedImageIndex(index);
+    setIsImageViewerOpen(true);
+  };
+
+  // Get only image attachments for the viewer
+  const imageAttachments = message.attachments?.filter(att => att.type === 'image') || [];
 
   // Show "deleted" message if deleted for everyone
   if (message.deletedAt) {
@@ -153,12 +166,34 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
                 <>
                   <div
                     className={clsx(
-                      'px-4 py-2.5 rounded-message relative',
+                      'px-4 py-2.5 rounded-message relative transition-all',
                       isOwnMessage
                         ? 'bg-primary-light text-gray-900 rounded-br-sm'
-                        : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+                        : 'bg-gray-100 text-gray-900 rounded-bl-sm',
+                      isHighlighted && 'ring-2 ring-yellow-400 shadow-lg'
                     )}
                   >
+                    {/* Pinned Indicator */}
+                    {message.isPinned && (
+                      <div className="absolute top-1 right-1">
+                        <svg className="w-3 h-3 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                        </svg>
+                      </div>
+                    )}
+
+                    {/* Forwarded Indicator */}
+                    {message.isForwarded && (
+                      <div className="mb-2 pb-2 border-b border-gray-300">
+                        <div className="flex items-center space-x-1 text-xs text-gray-500 italic">
+                          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                          <span>Forwarded from {message.forwardedFrom?.senderName}</span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Reply Preview */}
                     {message.replyTo && (
                       <div className="mb-2 pb-2 border-b border-gray-300 opacity-70">
@@ -172,7 +207,65 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
                     )}
 
                     {/* Message Text with Rich Formatting */}
-                    <RichTextRenderer content={message.text} />
+                    {message.text && <RichTextRenderer content={message.text} />}
+
+                    {/* Attachments */}
+                    {message.attachments && message.attachments.length > 0 && (
+                      <div className="mt-2 space-y-2">
+                        {message.attachments.map((attachment, index) => {
+                          // Get image index for the viewer
+                          const imageIndex = imageAttachments.findIndex(img => img.url === attachment.url);
+
+                          return (
+                            <div key={index}>
+                              {attachment.type === 'image' ? (
+                                <img
+                                  src={attachment.url}
+                                  alt={attachment.name}
+                                  className="max-w-sm rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                  onClick={() => handleOpenImageViewer(imageIndex)}
+                                />
+                              ) : (
+                                <a
+                                  href={attachment.url}
+                                  download={attachment.name}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center space-x-2 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                                >
+                                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                  </svg>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-medium text-gray-900 truncate">{attachment.name}</p>
+                                    <p className="text-xs text-gray-500">{(attachment.size / 1024).toFixed(1)} KB</p>
+                                  </div>
+                                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                                  </svg>
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Link Previews */}
+                    {message.linkPreviews && message.linkPreviews.length > 0 && (
+                      <div className="space-y-2">
+                        {message.linkPreviews.map((preview, index) => (
+                          <LinkPreview
+                            key={index}
+                            url={preview.url}
+                            title={preview.title}
+                            description={preview.description}
+                            image={preview.image}
+                            favicon={preview.favicon}
+                          />
+                        ))}
+                      </div>
+                    )}
 
                     {/* Message Reactions */}
                     <MessageReactions
@@ -219,6 +312,37 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
                         </svg>
                       </button>
+
+                      {/* Pin Button */}
+                      {onPin && (
+                        <button
+                          onClick={() => onPin(message.id, !message.isPinned)}
+                          className={clsx(
+                            'p-1.5 rounded transition-colors',
+                            message.isPinned
+                              ? 'bg-blue-100 hover:bg-blue-200 text-blue-600'
+                              : 'hover:bg-gray-200 text-gray-600'
+                          )}
+                          title={message.isPinned ? 'Unpin message' : 'Pin message'}
+                        >
+                          <svg className="w-4 h-4" fill={message.isPinned ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                        </button>
+                      )}
+
+                      {/* Forward Button */}
+                      {onForward && (
+                        <button
+                          onClick={() => onForward(message)}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title="Forward message"
+                        >
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                          </svg>
+                        </button>
+                      )}
 
                       {/* Edit Button (only for own messages) */}
                       {isOwnMessage && (
@@ -292,6 +416,14 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
           </div>
         </div>
       </div>
+
+      {/* Image Viewer Modal */}
+      <ImageViewerModal
+        isOpen={isImageViewerOpen}
+        onClose={() => setIsImageViewerOpen(false)}
+        images={imageAttachments}
+        initialIndex={selectedImageIndex}
+      />
     </div>
   );
 }

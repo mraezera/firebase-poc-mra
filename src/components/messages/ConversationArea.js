@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
-import { db } from '../../firebase/config';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../../firebase/config';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+import PinnedMessagesBar from './PinnedMessagesBar';
+import ForwardMessageModal from './ForwardMessageModal';
 import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
 import TypingIndicator from '../common/TypingIndicator';
+import SearchBar from './SearchBar';
 import { presenceService } from '../../services/presenceService';
+import { generateLinkPreviews } from '../../utils/linkPreview';
 
 function ConversationArea({ user, conversation, onToggleRightPanel }) {
   const [messages, setMessages] = useState([]);
@@ -13,10 +18,31 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  const [showForwardModal, setShowForwardModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [currentSearchIndex, setCurrentSearchIndex] = useState(0);
+
+  // Track which messages have been processed to avoid infinite loops
+  const processedMessagesRef = useRef(new Set());
+
+  // Filter pinned messages
+  const pinnedMessages = useMemo(() => {
+    return messages
+      .filter(msg => msg.isPinned)
+      .sort((a, b) => {
+        // Sort by pinnedAt timestamp, most recent first
+        if (!a.pinnedAt || !b.pinnedAt) return 0;
+        return b.pinnedAt.toMillis() - a.pinnedAt.toMillis();
+      });
+  }, [messages]);
 
   useEffect(() => {
     if (!conversation) {
       setMessages([]);
+      // Clear processed messages when conversation changes
+      processedMessagesRef.current.clear();
       return;
     }
 
@@ -48,66 +74,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       }
     };
 
-    // Mark messages as delivered (when they appear in view)
-    const markMessagesAsDelivered = async () => {
-      try {
-        const undeliveredMessages = messages.filter(msg =>
-          msg.senderId !== user.uid &&
-          (!msg.deliveredTo || !msg.deliveredTo[user.uid])
-        );
-
-        if (undeliveredMessages.length > 0) {
-          const batch = [];
-          undeliveredMessages.forEach(msg => {
-            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
-            batch.push(
-              updateDoc(messageRef, {
-                [`deliveredTo.${user.uid}`]: serverTimestamp(),
-                status: 'delivered'
-              })
-            );
-          });
-
-          await Promise.all(batch);
-        }
-      } catch (error) {
-        console.error('Error marking messages as delivered:', error);
-      }
-    };
-
-    // Mark messages as read
-    const markMessagesAsRead = async () => {
-      try {
-        const unreadMessages = messages.filter(msg =>
-          msg.senderId !== user.uid &&
-          (!msg.readBy || !msg.readBy[user.uid])
-        );
-
-        if (unreadMessages.length > 0) {
-          const batch = [];
-          unreadMessages.forEach(msg => {
-            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
-            batch.push(
-              updateDoc(messageRef, {
-                [`readBy.${user.uid}`]: serverTimestamp()
-              })
-            );
-          });
-
-          await Promise.all(batch);
-        }
-      } catch (error) {
-        console.error('Error marking messages as read:', error);
-      }
-    };
-
     markAsRead();
-
-    // Mark messages as delivered and read when they're loaded and when new messages arrive
-    if (messages.length > 0) {
-      markMessagesAsDelivered();
-      markMessagesAsRead();
-    }
 
     // Subscribe to typing indicators
     const unsubscribeTyping = presenceService.subscribeToTypingIndicators(
@@ -120,22 +87,146 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       unsubscribe();
       unsubscribeTyping();
     };
-  }, [conversation, user.uid, messages]);
+  }, [conversation, user.uid]);
+
+  // Separate effect for marking messages as delivered/read
+  // Only runs when message IDs change, not when message content changes
+  useEffect(() => {
+    if (!conversation || messages.length === 0) return;
+
+    const markMessagesAsDelivered = async () => {
+      try {
+        const undeliveredMessages = messages.filter(msg =>
+          msg.senderId !== user.uid &&
+          (!msg.deliveredTo || !msg.deliveredTo[user.uid]) &&
+          !processedMessagesRef.current.has(`delivered-${msg.id}`)
+        );
+
+        if (undeliveredMessages.length > 0) {
+          const batch = [];
+          undeliveredMessages.forEach(msg => {
+            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
+            batch.push(
+              updateDoc(messageRef, {
+                [`deliveredTo.${user.uid}`]: serverTimestamp(),
+                status: 'delivered'
+              })
+            );
+            // Mark as processed
+            processedMessagesRef.current.add(`delivered-${msg.id}`);
+          });
+
+          await Promise.all(batch);
+        }
+      } catch (error) {
+        console.error('Error marking messages as delivered:', error);
+      }
+    };
+
+    const markMessagesAsRead = async () => {
+      try {
+        const unreadMessages = messages.filter(msg =>
+          msg.senderId !== user.uid &&
+          (!msg.readBy || !msg.readBy[user.uid]) &&
+          !processedMessagesRef.current.has(`read-${msg.id}`)
+        );
+
+        if (unreadMessages.length > 0) {
+          const batch = [];
+          unreadMessages.forEach(msg => {
+            const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
+            batch.push(
+              updateDoc(messageRef, {
+                [`readBy.${user.uid}`]: serverTimestamp()
+              })
+            );
+            // Mark as processed
+            processedMessagesRef.current.add(`read-${msg.id}`);
+          });
+
+          await Promise.all(batch);
+        }
+      } catch (error) {
+        console.error('Error marking messages as read:', error);
+      }
+    };
+
+    markMessagesAsDelivered();
+    markMessagesAsRead();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conversation?.id, user.uid, messages.map(m => m.id).join(',')]);  // Only trigger when message IDs change
 
   const handleSendMessage = async (messageData) => {
     if (!conversation) return;
 
-    const { plainText, richText, replyTo: replyToMessage } = messageData;
+    const { plainText, richText, replyTo: replyToMessage, images = [], files = [] } = messageData;
 
-    if (!plainText || !plainText.trim()) return;
+    // Must have either text or attachments
+    if ((!plainText || !plainText.trim()) && images.length === 0 && files.length === 0) return;
 
     try {
       const messagesRef = collection(db, `conversations/${conversation.id}/messages`);
+      const attachments = [];
+
+      // Upload images to Firebase Storage
+      if (images.length > 0) {
+        for (const imageFile of images) {
+          const timestamp = Date.now();
+          const storageRef = ref(storage, `conversations/${conversation.id}/images/${timestamp}_${imageFile.name}`);
+
+          await uploadBytes(storageRef, imageFile);
+          const downloadURL = await getDownloadURL(storageRef);
+
+          attachments.push({
+            type: 'image',
+            url: downloadURL,
+            name: imageFile.name,
+            size: imageFile.size,
+            contentType: imageFile.type
+          });
+        }
+      }
+
+      // Upload files to Firebase Storage
+      if (files.length > 0) {
+        for (const file of files) {
+          const timestamp = Date.now();
+          const storageRef = ref(storage, `conversations/${conversation.id}/files/${timestamp}_${file.name}`);
+
+          await uploadBytes(storageRef, file);
+          const downloadURL = await getDownloadURL(storageRef);
+
+          attachments.push({
+            type: 'file',
+            url: downloadURL,
+            name: file.name,
+            size: file.size,
+            contentType: file.type
+          });
+        }
+      }
+
+      // Generate link previews from text
+      let linkPreviews = [];
+      if (plainText && plainText.trim()) {
+        try {
+          linkPreviews = await generateLinkPreviews(plainText);
+        } catch (error) {
+          console.error('Error generating link previews:', error);
+          // Continue without link previews if generation fails
+        }
+      }
+
+      // Determine message type
+      let messageType = 'text';
+      if (attachments.some(a => a.type === 'image')) {
+        messageType = attachments.length === 1 && !plainText ? 'image' : 'text';
+      }
 
       const newMessage = {
-        text: richText,
-        plainText: plainText.trim(),
-        type: 'text',
+        text: richText || null,
+        plainText: plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : ''),
+        type: messageType,
         senderId: user.uid,
         senderName: user.displayName,
         senderPhotoURL: user.photoURL || '',
@@ -150,7 +241,8 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           senderId: replyToMessage.senderId,
           senderName: replyToMessage.senderName
         } : null,
-        attachments: [],
+        attachments,
+        linkPreviews,
         // Message status tracking
         status: 'sent',
         readBy: {},
@@ -172,14 +264,16 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         }
       });
 
+      const lastMessageText = plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : '');
+
       await updateDoc(conversationRef, {
         lastMessage: {
-          text: plainText.trim(),
-          plainText: plainText.trim(),
+          text: lastMessageText,
+          plainText: lastMessageText,
           senderId: user.uid,
           senderName: user.displayName,
           createdAt: serverTimestamp(),
-          type: 'text'
+          type: messageType
         },
         updatedAt: serverTimestamp(),
         ...unreadUpdates
@@ -283,6 +377,149 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     }
   };
 
+  const handlePinMessage = async (messageId, shouldPin) => {
+    if (!conversation) return;
+
+    try {
+      const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
+
+      if (shouldPin) {
+        // Pin the message
+        await updateDoc(messageRef, {
+          isPinned: true,
+          pinnedAt: serverTimestamp(),
+          pinnedBy: user.uid
+        });
+      } else {
+        // Unpin the message
+        await updateDoc(messageRef, {
+          isPinned: false,
+          pinnedAt: null,
+          pinnedBy: null
+        });
+      }
+    } catch (error) {
+      console.error('Error pinning message:', error);
+      alert('Error pinning message: ' + error.message);
+    }
+  };
+
+  const handleScrollToMessage = (messageId) => {
+    // For now, just log the message ID
+    // In a more advanced implementation, we could scroll to the specific message
+    console.log('Scroll to message:', messageId);
+    // TODO: Implement scrolling to specific message using refs or virtualization API
+  };
+
+  const handleForwardMessage = (message) => {
+    setForwardingMessage(message);
+    setShowForwardModal(true);
+  };
+
+  const handleForwardToConversations = async (message, conversationIds) => {
+    if (!message || conversationIds.length === 0) return;
+
+    try {
+      // Send the message to each selected conversation
+      const promises = conversationIds.map(async (conversationId) => {
+        const messagesRef = collection(db, `conversations/${conversationId}/messages`);
+
+        const forwardedMessage = {
+          text: message.text,
+          plainText: message.plainText,
+          type: 'text',
+          senderId: user.uid,
+          senderName: user.displayName,
+          senderPhotoURL: user.photoURL || '',
+          createdAt: serverTimestamp(),
+          editedAt: null,
+          deletedAt: null,
+          deletedFor: [],
+          replyTo: null,
+          attachments: [],
+          // Mark as forwarded
+          isForwarded: true,
+          forwardedFrom: {
+            messageId: message.id,
+            senderId: message.senderId,
+            senderName: message.senderName,
+            conversationId: conversation.id
+          },
+          // Message status tracking
+          status: 'sent',
+          readBy: {},
+          deliveredTo: {
+            [user.uid]: serverTimestamp()
+          }
+        };
+
+        await addDoc(messagesRef, forwardedMessage);
+
+        // Update conversation's lastMessage
+        const conversationRef = doc(db, 'conversations', conversationId);
+        await updateDoc(conversationRef, {
+          lastMessage: {
+            text: `Forwarded: ${message.plainText}`,
+            plainText: `Forwarded: ${message.plainText}`,
+            senderId: user.uid,
+            senderName: user.displayName,
+            createdAt: serverTimestamp(),
+            type: 'text'
+          },
+          updatedAt: serverTimestamp()
+        });
+      });
+
+      await Promise.all(promises);
+
+      // Show success message (optional)
+      console.log(`Message forwarded to ${conversationIds.length} conversation(s)`);
+    } catch (error) {
+      console.error('Error forwarding message:', error);
+      alert('Error forwarding message: ' + error.message);
+    }
+  };
+
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setSearchResults([]);
+      setCurrentSearchIndex(0);
+      return;
+    }
+
+    // Search through messages
+    const results = messages.filter(msg => {
+      const searchText = query.toLowerCase();
+      return (
+        msg.plainText?.toLowerCase().includes(searchText) ||
+        msg.senderName?.toLowerCase().includes(searchText)
+      );
+    });
+
+    setSearchResults(results);
+    setCurrentSearchIndex(0);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchResults([]);
+    setCurrentSearchIndex(0);
+  };
+
+  const handleNextResult = () => {
+    if (currentSearchIndex < searchResults.length - 1) {
+      setCurrentSearchIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePreviousResult = () => {
+    if (currentSearchIndex > 0) {
+      setCurrentSearchIndex(prev => prev - 1);
+    }
+  };
+
   const getConversationName = () => {
     if (!conversation) return '';
 
@@ -331,16 +568,38 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             />
           )}
         </div>
-        <button
-          onClick={onToggleRightPanel}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          title="Toggle info panel"
-        >
-          <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-        </button>
+
+        <div className="flex items-center space-x-2">
+          {/* Search Bar */}
+          <SearchBar
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            resultsCount={searchResults.length}
+            currentIndex={currentSearchIndex}
+            onNext={handleNextResult}
+            onPrevious={handlePreviousResult}
+          />
+
+          <button
+            onClick={onToggleRightPanel}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            title="Toggle info panel"
+          >
+            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </button>
+        </div>
       </div>
+
+      {/* Pinned Messages Bar */}
+      {pinnedMessages.length > 0 && (
+        <PinnedMessagesBar
+          pinnedMessages={pinnedMessages}
+          onUnpin={handlePinMessage}
+          onScrollToMessage={handleScrollToMessage}
+        />
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-hidden flex flex-col">
@@ -351,15 +610,19 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             </div>
           ) : (
             <MessageList
-              messages={messages}
+              messages={searchQuery ? searchResults : messages}
               currentUserId={user.uid}
               onReply={handleReply}
               onEdit={handleEditMessage}
               onDelete={handleDeleteMessage}
               onReact={handleReactToMessage}
+              onPin={handlePinMessage}
+              onForward={handleForwardMessage}
               editingMessage={editingMessage}
               onSaveEdit={handleSaveEdit}
               onCancelEdit={handleCancelEdit}
+              searchQuery={searchQuery}
+              highlightedMessageId={searchResults[currentSearchIndex]?.id}
             />
           )}
         </div>
@@ -374,6 +637,15 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         onSendMessage={handleSendMessage}
         replyTo={replyTo}
         onCancelReply={handleCancelReply}
+      />
+
+      {/* Forward Message Modal */}
+      <ForwardMessageModal
+        isOpen={showForwardModal}
+        onClose={() => setShowForwardModal(false)}
+        message={forwardingMessage}
+        currentUserId={user.uid}
+        onForward={handleForwardToConversations}
       />
     </div>
   );
