@@ -3,12 +3,16 @@ import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp,
 import { db } from '../../firebase/config';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
+import TypingIndicator from '../common/TypingIndicator';
+import { presenceService } from '../../services/presenceService';
 
 function ConversationArea({ user, conversation, onToggleRightPanel }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
+  const [typingUsers, setTypingUsers] = useState([]);
 
   useEffect(() => {
     if (!conversation) {
@@ -46,7 +50,17 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
 
     markAsRead();
 
-    return () => unsubscribe();
+    // Subscribe to typing indicators
+    const unsubscribeTyping = presenceService.subscribeToTypingIndicators(
+      conversation.id,
+      user.uid,
+      setTypingUsers
+    );
+
+    return () => {
+      unsubscribe();
+      unsubscribeTyping();
+    };
   }, [conversation, user.uid]);
 
   const handleSendMessage = async (messageData) => {
@@ -214,10 +228,16 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           <h2 className="text-xl font-semibold text-gray-900">
             {getConversationName()}
           </h2>
-          {conversation.type === 'group' && (
+          {conversation.type === 'group' ? (
             <span className="text-sm text-gray-500">
               {conversation.participants.length} members
             </span>
+          ) : (
+            <OnlineStatusIndicator
+              userId={conversation.participants.find(id => id !== user.uid)}
+              showLastSeen={true}
+              size="sm"
+            />
           )}
         </div>
         <button
@@ -232,27 +252,33 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden">
-        {loading ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-gray-500">Loading messages...</div>
-          </div>
-        ) : (
-          <MessageList
-            messages={messages}
-            currentUserId={user.uid}
-            onReply={handleReply}
-            onEdit={handleEditMessage}
-            onDelete={handleDeleteMessage}
-            editingMessage={editingMessage}
-            onSaveEdit={handleSaveEdit}
-            onCancelEdit={handleCancelEdit}
-          />
-        )}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 overflow-auto">
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500">Loading messages...</div>
+            </div>
+          ) : (
+            <MessageList
+              messages={messages}
+              currentUserId={user.uid}
+              onReply={handleReply}
+              onEdit={handleEditMessage}
+              onDelete={handleDeleteMessage}
+              editingMessage={editingMessage}
+              onSaveEdit={handleSaveEdit}
+              onCancelEdit={handleCancelEdit}
+            />
+          )}
+        </div>
+
+        {/* Typing Indicator */}
+        <TypingIndicator typingUsers={typingUsers} />
       </div>
 
       {/* Input */}
       <MessageInput
+        conversationId={conversation.id}
         onSendMessage={handleSendMessage}
         replyTo={replyTo}
         onCancelReply={handleCancelReply}

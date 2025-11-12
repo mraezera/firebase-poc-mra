@@ -1,6 +1,7 @@
 import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
+import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
 
 function ConversationCard({ conversation, currentUserId, isSelected, onClick, unreadCount = 0 }) {
   const getConversationName = () => {
@@ -59,7 +60,7 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
     >
       <div className="flex items-start space-x-3">
         {/* Avatar */}
-        <div className="flex-shrink-0">
+        <div className="flex-shrink-0 relative">
           {photoURL ? (
             <img
               src={photoURL}
@@ -69,6 +70,15 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
           ) : (
             <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
               {getInitials(conversationName)}
+            </div>
+          )}
+          {/* Show online status for direct conversations */}
+          {conversation.type !== 'group' && (
+            <div className="absolute bottom-0 right-0">
+              <OnlineStatusIndicator
+                userId={conversation.participants.find(id => id !== currentUserId)}
+                size="md"
+              />
             </div>
           )}
         </div>

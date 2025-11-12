@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import clsx from 'clsx';
 import RichTextEditor, {
   createEmptySlateValue,
@@ -6,10 +6,49 @@ import RichTextEditor, {
   slateToPlainText,
   slateToJSON
 } from './RichTextEditor';
+import { presenceService } from '../../services/presenceService';
 
-function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
+function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId }) {
   const [editorValue, setEditorValue] = useState(() => createEmptySlateValue());
   const [editorKey, setEditorKey] = useState(0);
+  const typingTimeoutRef = useRef(null);
+  const isTypingRef = useRef(false);
+
+  // Handle typing indicators
+  const handleEditorChange = (value) => {
+    setEditorValue(value);
+
+    if (!conversationId) return;
+
+    // Set typing status to true
+    if (!isTypingRef.current) {
+      isTypingRef.current = true;
+      presenceService.setTypingStatus(conversationId, true);
+    }
+
+    // Clear previous timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Set timeout to clear typing status after 3 seconds of inactivity
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+      presenceService.setTypingStatus(conversationId, false);
+    }, 3000);
+  };
+
+  // Clean up typing status on unmount
+  useEffect(() => {
+    return () => {
+      if (conversationId && isTypingRef.current) {
+        presenceService.setTypingStatus(conversationId, false);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, [conversationId]);
 
   const handleSubmit = (e) => {
     if (e) e.preventDefault();
@@ -23,6 +62,17 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
         richText,
         replyTo
       });
+
+      // Clear typing status
+      if (conversationId && isTypingRef.current) {
+        isTypingRef.current = false;
+        presenceService.setTypingStatus(conversationId, false);
+      }
+
+      // Clear typing timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
 
       // Reset editor by changing key (forces remount)
       setEditorValue(createEmptySlateValue());
@@ -67,7 +117,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply }) {
         <div className="flex-1">
           <RichTextEditor
             value={editorValue}
-            onChange={setEditorValue}
+            onChange={handleEditorChange}
             onSubmit={handleSubmit}
             placeholder="Type a message... (Ctrl+B for bold, Ctrl+I for italic)"
             editorKey={editorKey}

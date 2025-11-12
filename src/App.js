@@ -4,6 +4,7 @@ import { auth } from './firebase/config';
 import Button from "./components/Button";
 import Layout from "./components/layout/Layout";
 import { testFirebasePermissions } from './utils/testFirebase';
+import { presenceService } from './services/presenceService';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -32,8 +33,13 @@ function App() {
         } else {
           console.log('✅ Firebase permissions OK!');
         }
+
+        // Set user online status
+        await presenceService.setUserOnline(user);
       } else {
         setUser(null);
+        // Clean up presence when user logs out
+        await presenceService.cleanup();
       }
 
       if (initializing) {
@@ -41,7 +47,11 @@ function App() {
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      // Clean up presence on unmount
+      presenceService.cleanup();
+    };
   }, [initializing]);
 
   const signInWithGoogle = async () => {
@@ -56,6 +66,10 @@ function App() {
 
   const signOut = async () => {
     try {
+      // Set user offline before signing out
+      if (user) {
+        await presenceService.setUserOffline(user.uid);
+      }
       await firebaseSignOut(auth);
     } catch (error) {
       console.error(error.message);
