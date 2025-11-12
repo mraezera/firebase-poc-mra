@@ -8,6 +8,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [replyTo, setReplyTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
 
   useEffect(() => {
     if (!conversation) {
@@ -94,6 +95,65 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     setReplyTo(null);
   };
 
+  const handleEditMessage = (message) => {
+    setEditingMessage(message);
+    setReplyTo(null); // Clear reply when editing
+  };
+
+  const handleSaveEdit = async (messageId, newText, newPlainText) => {
+    if (!conversation || !newPlainText.trim()) return;
+
+    try {
+      const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
+
+      await updateDoc(messageRef, {
+        text: newText,
+        plainText: newPlainText.trim(),
+        editedAt: serverTimestamp()
+      });
+
+      setEditingMessage(null);
+    } catch (error) {
+      console.error('Error editing message:', error);
+      alert('Error editing message: ' + error.message);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+  };
+
+  const handleDeleteMessage = async (messageId, deleteForEveryone) => {
+    if (!conversation) return;
+
+    const confirmMessage = deleteForEveryone
+      ? 'Delete this message for everyone?'
+      : 'Delete this message for you?';
+
+    if (!window.confirm(confirmMessage)) return;
+
+    try {
+      const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
+
+      if (deleteForEveryone) {
+        // Delete for everyone
+        await updateDoc(messageRef, {
+          deletedAt: serverTimestamp(),
+          text: '[Deleted]',
+          plainText: '[Deleted]'
+        });
+      } else {
+        // Delete for me only
+        await updateDoc(messageRef, {
+          deletedFor: [...(messages.find(m => m.id === messageId)?.deletedFor || []), user.uid]
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      alert('Error deleting message: ' + error.message);
+    }
+  };
+
   const getConversationName = () => {
     if (!conversation) return '';
 
@@ -158,6 +218,11 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             messages={messages}
             currentUserId={user.uid}
             onReply={handleReply}
+            onEdit={handleEditMessage}
+            onDelete={handleDeleteMessage}
+            editingMessage={editingMessage}
+            onSaveEdit={handleSaveEdit}
+            onCancelEdit={handleCancelEdit}
           />
         )}
       </div>

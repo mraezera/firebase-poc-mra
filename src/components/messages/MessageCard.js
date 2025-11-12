@@ -2,9 +2,18 @@ import React, { useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 import RichTextRenderer from './RichTextRenderer';
+import RichTextEditor, {
+  jsonToSlate,
+  slateToJSON,
+  slateToPlainText
+} from './RichTextEditor';
 
-function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply }) {
+function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit }) {
   const [showActions, setShowActions] = useState(false);
+  const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [editValue, setEditValue] = useState(() =>
+    isEditing ? jsonToSlate(message.text) : null
+  );
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     try {
@@ -22,6 +31,24 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
       .join('')
       .toUpperCase()
       .slice(0, 2);
+  };
+
+  const handleSave = () => {
+    if (editValue) {
+      const richText = slateToJSON(editValue);
+      const plainText = slateToPlainText(editValue);
+      onSaveEdit(message.id, richText, plainText);
+    }
+  };
+
+  const handleCancel = () => {
+    setEditValue(jsonToSlate(message.text));
+    onCancelEdit();
+  };
+
+  const handleDelete = (deleteForEveryone) => {
+    setShowDeleteMenu(false);
+    onDelete(message.id, deleteForEveryone);
   };
 
   if (message.deletedAt && !message.deletedFor.includes(currentUserId)) {
@@ -70,29 +97,54 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
           )}
 
           {/* Message Content */}
-          <div
-            className={clsx(
-              'px-4 py-2.5 rounded-message relative',
-              isOwnMessage
-                ? 'bg-primary-light text-gray-900 rounded-br-sm'
-                : 'bg-gray-100 text-gray-900 rounded-bl-sm'
-            )}
-          >
-            {/* Reply Preview */}
-            {message.replyTo && (
-              <div className="mb-2 pb-2 border-b border-gray-300 opacity-70">
-                <p className="text-xs font-semibold text-gray-600 mb-0.5">
-                  {message.replyTo.senderName}
-                </p>
-                <p className="text-xs text-gray-600 truncate max-w-sm">
-                  {message.replyTo.plainText}
-                </p>
+          {isEditing ? (
+            <div className="flex-1 space-y-2">
+              <RichTextEditor
+                value={editValue}
+                onChange={setEditValue}
+                onSubmit={handleSave}
+                placeholder="Edit message..."
+              />
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={handleSave}
+                  className="px-3 py-1.5 bg-primary text-white text-sm rounded hover:bg-primary-dark transition-colors"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={handleCancel}
+                  className="px-3 py-1.5 bg-gray-300 text-gray-700 text-sm rounded hover:bg-gray-400 transition-colors"
+                >
+                  Cancel
+                </button>
               </div>
-            )}
+            </div>
+          ) : (
+            <div
+              className={clsx(
+                'px-4 py-2.5 rounded-message relative',
+                isOwnMessage
+                  ? 'bg-primary-light text-gray-900 rounded-br-sm'
+                  : 'bg-gray-100 text-gray-900 rounded-bl-sm'
+              )}
+            >
+              {/* Reply Preview */}
+              {message.replyTo && (
+                <div className="mb-2 pb-2 border-b border-gray-300 opacity-70">
+                  <p className="text-xs font-semibold text-gray-600 mb-0.5">
+                    {message.replyTo.senderName}
+                  </p>
+                  <p className="text-xs text-gray-600 truncate max-w-sm">
+                    {message.replyTo.plainText}
+                  </p>
+                </div>
+              )}
 
-            {/* Message Text with Rich Formatting */}
-            <RichTextRenderer content={message.text} />
-          </div>
+              {/* Message Text with Rich Formatting */}
+              <RichTextRenderer content={message.text} />
+            </div>
+          )}
 
           {/* Timestamp and Edited Label */}
           <div className="flex items-center space-x-2 mt-1 px-2">
@@ -106,7 +158,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
         </div>
 
         {/* Action Buttons (shown on hover) */}
-        {showActions && (
+        {showActions && !isEditing && (
           <div className={clsx('flex items-start space-x-1 mt-8', isOwnMessage ? 'mr-2' : 'ml-2')}>
             {/* Reply Button */}
             <button
@@ -122,6 +174,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
             {/* Edit Button (only for own messages) */}
             {isOwnMessage && (
               <button
+                onClick={() => onEdit(message)}
                 className="p-1.5 hover:bg-gray-200 rounded transition-colors"
                 title="Edit"
               >
@@ -133,14 +186,35 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
 
             {/* Delete Button (only for own messages) */}
             {isOwnMessage && (
-              <button
-                className="p-1.5 hover:bg-red-100 rounded transition-colors"
-                title="Delete"
-              >
-                <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setShowDeleteMenu(!showDeleteMenu)}
+                  className="p-1.5 hover:bg-red-100 rounded transition-colors"
+                  title="Delete"
+                >
+                  <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+
+                {/* Delete Menu */}
+                {showDeleteMenu && (
+                  <div className="absolute bottom-full right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 z-10 whitespace-nowrap">
+                    <button
+                      onClick={() => handleDelete(false)}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                    >
+                      Delete for me
+                    </button>
+                    <button
+                      onClick={() => handleDelete(true)}
+                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                    >
+                      Delete for everyone
+                    </button>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
