@@ -48,10 +48,15 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, editi
     }
   };
 
+  // Filter out messages deleted for current user
+  const visibleMessages = messages.filter(
+    (msg) => !(msg.deletedFor && msg.deletedFor.includes(currentUserId))
+  );
+
   // Prepare items for virtualization (messages + date headers)
   const items = [];
-  messages.forEach((message, index) => {
-    const previousMessage = index > 0 ? messages[index - 1] : null;
+  visibleMessages.forEach((message, index) => {
+    const previousMessage = index > 0 ? visibleMessages[index - 1] : null;
     const showDateHeader = shouldShowDateHeader(message, previousMessage);
 
     if (showDateHeader) {
@@ -76,7 +81,7 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, editi
     overscan: 5
   });
 
-  if (messages.length === 0) {
+  if (visibleMessages.length === 0) {
     return (
       <div className="flex items-center justify-center h-full">
         <div className="text-center text-gray-500">
@@ -125,8 +130,8 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, editi
           // Message item
           const { message, index } = item;
           const isOwnMessage = message.senderId === currentUserId;
-          const previousMessage = index > 0 ? messages[index - 1] : null;
-          const nextMessage = index < messages.length - 1 ? messages[index + 1] : null;
+          const previousMessage = index > 0 ? visibleMessages[index - 1] : null;
+          const nextMessage = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : null;
 
           const showAvatar = !isOwnMessage && (
             index === 0 ||

@@ -44,7 +44,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder }) => {
       )}
       style={{ minHeight: '48px' }}
     >
-      <Slate editor={editor} initialValue={safeValue} onChange={onChange}>
+      <Slate editor={editor} value={safeValue} onChange={onChange}>
         <Editable
           renderLeaf={renderLeaf}
           renderElement={renderElement}

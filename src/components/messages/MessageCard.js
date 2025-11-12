@@ -51,11 +51,6 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
     onDelete(message.id, deleteForEveryone);
   };
 
-  // Hide message if deleted for current user
-  if (message.deletedFor && message.deletedFor.includes(currentUserId)) {
-    return null;
-  }
-
   // Show "deleted" message if deleted for everyone
   if (message.deletedAt) {
     return (
