@@ -1,17 +1,30 @@
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState, useRef } from 'react';
 import { createEditor, Editor } from 'slate';
-import { Slate, Editable, withReact } from 'slate-react';
+import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
 import clsx from 'clsx';
 
 const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) => {
   const editor = useMemo(() => withReact(createEditor()), [editorKey]);
   const [isFocused, setIsFocused] = useState(false);
+  const editableRef = useRef(null);
 
   // Ensure value is never undefined
   const initialValue = value || createEmptySlateValue();
 
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const renderElement = useCallback((props) => <Element {...props} />, []);
+
+  // Handle clicking anywhere in the container to focus the editor
+  const handleContainerClick = useCallback(() => {
+    try {
+      ReactEditor.focus(editor);
+    } catch (e) {
+      // Fallback if ReactEditor.focus fails
+      if (editableRef.current) {
+        editableRef.current.focus();
+      }
+    }
+  }, [editor]);
 
   const handleKeyDown = (event) => {
     // Submit on Enter (without Shift)
@@ -38,8 +51,9 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) =
 
   return (
     <div
+      onClick={handleContainerClick}
       className={clsx(
-        'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all',
+        'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
         isFocused && 'ring-2 ring-primary border-transparent'
       )}
       style={{ minHeight: '48px' }}
@@ -51,6 +65,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) =
         onChange={onChange}
       >
         <Editable
+          ref={editableRef}
           renderLeaf={renderLeaf}
           renderElement={renderElement}
           placeholder={placeholder}
