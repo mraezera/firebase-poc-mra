@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import ConversationCard from './ConversationCard';
 import NewConversationModal from './NewConversationModal';
@@ -172,6 +172,7 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
                 currentUserId={user.uid}
                 isSelected={selectedConversation?.id === conversation.id}
                 onClick={() => onSelectConversation(conversation)}
+                unreadCount={conversation.unreadCount?.[user.uid] || 0}
               />
             ))}
           </div>

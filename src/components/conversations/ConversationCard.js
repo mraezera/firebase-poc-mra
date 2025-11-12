@@ -2,7 +2,7 @@ import React from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
 
-function ConversationCard({ conversation, currentUserId, isSelected, onClick }) {
+function ConversationCard({ conversation, currentUserId, isSelected, onClick, unreadCount = 0 }) {
   const getConversationName = () => {
     if (conversation.type === 'group') {
       return conversation.name || 'Group Chat';
@@ -92,11 +92,18 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick }) 
                 </svg>
               )}
             </div>
-            {lastMessage?.createdAt && (
-              <span className="text-xs text-gray-500 ml-2 flex-shrink-0">
-                {formatTimestamp(lastMessage.createdAt)}
-              </span>
-            )}
+            <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+              {lastMessage?.createdAt && (
+                <span className="text-xs text-gray-500">
+                  {formatTimestamp(lastMessage.createdAt)}
+                </span>
+              )}
+              {unreadCount > 0 && (
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-semibold rounded-full">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </div>
           </div>
 
           {lastMessage && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
@@ -32,8 +32,22 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       setLoading(false);
     });
 
+    // Mark conversation as read (reset unread count)
+    const markAsRead = async () => {
+      try {
+        const conversationRef = doc(db, 'conversations', conversation.id);
+        await updateDoc(conversationRef, {
+          [`unreadCount.${user.uid}`]: 0
+        });
+      } catch (error) {
+        console.error('Error marking conversation as read:', error);
+      }
+    };
+
+    markAsRead();
+
     return () => unsubscribe();
-  }, [conversation]);
+  }, [conversation, user.uid]);
 
   const handleSendMessage = async (messageData) => {
     if (!conversation) return;
@@ -68,8 +82,17 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
 
       await addDoc(messagesRef, newMessage);
 
-      // Update conversation's lastMessage
+      // Update conversation's lastMessage and increment unread counts
       const conversationRef = doc(db, 'conversations', conversation.id);
+
+      // Build unread count updates for all participants except sender
+      const unreadUpdates = {};
+      conversation.participants.forEach(participantId => {
+        if (participantId !== user.uid) {
+          unreadUpdates[`unreadCount.${participantId}`] = increment(1);
+        }
+      });
+
       await updateDoc(conversationRef, {
         lastMessage: {
           text: plainText.trim(),
@@ -79,7 +102,8 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           createdAt: serverTimestamp(),
           type: 'text'
         },
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        ...unreadUpdates
       });
     } catch (error) {
       console.error('Error sending message:', error);
