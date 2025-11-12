@@ -257,6 +257,32 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     }
   };
 
+  const handleReactToMessage = async (messageId, emoji, action) => {
+    if (!conversation) return;
+
+    try {
+      const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
+
+      if (action === 'add') {
+        // Add reaction
+        await updateDoc(messageRef, {
+          [`reactions.${user.uid}`]: {
+            emoji,
+            userName: user.displayName,
+            timestamp: serverTimestamp()
+          }
+        });
+      } else {
+        // Remove reaction
+        await updateDoc(messageRef, {
+          [`reactions.${user.uid}`]: null
+        });
+      }
+    } catch (error) {
+      console.error('Error reacting to message:', error);
+    }
+  };
+
   const getConversationName = () => {
     if (!conversation) return '';
 
@@ -330,6 +356,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
               onReply={handleReply}
               onEdit={handleEditMessage}
               onDelete={handleDeleteMessage}
+              onReact={handleReactToMessage}
               editingMessage={editingMessage}
               onSaveEdit={handleSaveEdit}
               onCancelEdit={handleCancelEdit}

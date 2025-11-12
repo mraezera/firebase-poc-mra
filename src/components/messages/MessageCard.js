@@ -8,10 +8,13 @@ import RichTextEditor, {
   slateToPlainText
 } from './RichTextEditor';
 import MessageStatusIndicator from '../common/MessageStatusIndicator';
+import MessageReactions from './MessageReactions';
+import EmojiPicker from '../common/EmojiPicker';
 
-function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit }) {
+function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply, onEdit, onDelete, isEditing, onSaveEdit, onCancelEdit, onReact }) {
   const [showActions, setShowActions] = useState(false);
   const [showDeleteMenu, setShowDeleteMenu] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [editValue, setEditValue] = useState(() =>
     isEditing ? jsonToSlate(message.text) : null
   );
@@ -57,6 +60,18 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
   const handleDelete = (deleteForEveryone) => {
     setShowDeleteMenu(false);
     onDelete(message.id, deleteForEveryone);
+  };
+
+  const handleAddReaction = (emoji) => {
+    if (onReact) {
+      onReact(message.id, emoji, 'add');
+    }
+  };
+
+  const handleRemoveReaction = (emoji) => {
+    if (onReact) {
+      onReact(message.id, emoji, 'remove');
+    }
   };
 
   // Show "deleted" message if deleted for everyone
@@ -158,11 +173,42 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
 
                     {/* Message Text with Rich Formatting */}
                     <RichTextRenderer content={message.text} />
+
+                    {/* Message Reactions */}
+                    <MessageReactions
+                      reactions={message.reactions}
+                      currentUserId={currentUserId}
+                      onAddReaction={handleAddReaction}
+                      onRemoveReaction={handleRemoveReaction}
+                    />
                   </div>
 
                   {/* Action Buttons (shown on hover) */}
                   {showActions && (
                     <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {/* Reaction Button */}
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                          className="p-1.5 hover:bg-gray-200 rounded transition-colors"
+                          title="Add reaction"
+                        >
+                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </button>
+
+                        {/* Emoji Picker */}
+                        {showEmojiPicker && (
+                          <div className="absolute bottom-full left-0 mb-2 z-20">
+                            <EmojiPicker
+                              onEmojiSelect={handleAddReaction}
+                              onClose={() => setShowEmojiPicker(false)}
+                            />
+                          </div>
+                        )}
+                      </div>
+
                       {/* Reply Button */}
                       <button
                         onClick={() => onReply(message)}

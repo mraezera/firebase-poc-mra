@@ -3,7 +3,7 @@ import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import MessageCard from './MessageCard';
 
-function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, editingMessage, onSaveEdit, onCancelEdit }) {
+function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onReact, editingMessage, onSaveEdit, onCancelEdit }) {
   const parentRef = useRef(null);
   const messagesEndRef = useRef(null);
 
@@ -164,6 +164,7 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, editi
                 onReply={onReply}
                 onEdit={onEdit}
                 onDelete={onDelete}
+                onReact={onReact}
                 isEditing={editingMessage?.id === message.id}
                 onSaveEdit={onSaveEdit}
                 onCancelEdit={onCancelEdit}
