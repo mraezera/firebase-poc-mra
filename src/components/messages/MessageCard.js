@@ -116,6 +116,7 @@ function MessageCard({ message, isOwnMessage, showAvatar, currentUserId, onReply
                     onSubmit={handleSave}
                     placeholder="Edit message..."
                     editorKey={`edit-${message.id}`}
+                    variant="large"
                   />
                   <div className="flex items-center space-x-2">
                     <button

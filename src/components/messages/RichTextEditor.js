@@ -3,13 +3,29 @@ import { createEditor, Editor } from 'slate';
 import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
 import clsx from 'clsx';
 
-const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) => {
+const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }) => {
   const editor = useMemo(() => withReact(createEditor()), [editorKey]);
   const [isFocused, setIsFocused] = useState(false);
   const editableRef = useRef(null);
 
   // Ensure value is never undefined
   const initialValue = value || createEmptySlateValue();
+
+  // Size configurations based on variant
+  const sizes = {
+    default: {
+      containerMinHeight: '48px',
+      editableMinHeight: '20px',
+      editableMaxHeight: '100px',
+    },
+    large: {
+      containerMinHeight: '80px',
+      editableMinHeight: '60px',
+      editableMaxHeight: '200px',
+    }
+  };
+
+  const sizeConfig = sizes[variant] || sizes.default;
 
   const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
   const renderElement = useCallback((props) => <Element {...props} />, []);
@@ -56,7 +72,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) =
         'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
         isFocused && 'ring-2 ring-primary border-transparent'
       )}
-      style={{ minHeight: '48px' }}
+      style={{ minHeight: sizeConfig.containerMinHeight }}
     >
       <Slate
         key={editorKey}
@@ -74,8 +90,8 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey }) =
           onBlur={() => setIsFocused(false)}
           style={{
             outline: 'none',
-            minHeight: '20px',
-            maxHeight: '100px',
+            minHeight: sizeConfig.editableMinHeight,
+            maxHeight: sizeConfig.editableMaxHeight,
             overflowY: 'auto',
           }}
         />
