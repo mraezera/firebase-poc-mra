@@ -16,6 +16,11 @@ function MessageReactions({ reactions = {}, currentUserId, onAddReaction, onRemo
   // Group reactions by emoji
   const groupedReactions = {};
   Object.entries(reactions).forEach(([userId, reaction]) => {
+    // Skip null or invalid reactions
+    if (!reaction || !reaction.emoji) {
+      return;
+    }
+
     const emoji = reaction.emoji;
     if (!groupedReactions[emoji]) {
       groupedReactions[emoji] = {

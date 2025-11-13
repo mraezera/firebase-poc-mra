@@ -1,13 +1,40 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createEditor, Editor } from 'slate';
 import { Editable, ReactEditor, Slate, withReact } from 'slate-react';
 
-const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }) => {
+const RichTextEditor = ({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  editorKey,
+  variant = 'default',
+  autoFocus = false,
+}) => {
   const editor = useMemo(() => withReact(createEditor()), []);
   const [isFocused, setIsFocused] = useState(false);
   const editableRef = useRef(null);
+
+  // Auto-focus when component mounts or when autoFocus changes
+  useEffect(() => {
+    if (autoFocus) {
+      // Use a small delay to ensure the editor is fully rendered
+      const timer = setTimeout(() => {
+        try {
+          ReactEditor.focus(editor);
+          // Move cursor to the end of the content
+          const end = Editor.end(editor, []);
+          editor.selection = { anchor: end, focus: end };
+        } catch (err) {
+          console.error('Failed to auto-focus editor:', err);
+        }
+      }, 0);
+
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus, editor]);
 
   // Ensure value is never undefined
   const initialValue = value || createEmptySlateValue();
@@ -252,6 +279,7 @@ RichTextEditor.propTypes = {
   placeholder: PropTypes.string,
   editorKey: PropTypes.number,
   variant: PropTypes.oneOf(['default', 'large']),
+  autoFocus: PropTypes.bool,
 };
 
 Element.propTypes = {

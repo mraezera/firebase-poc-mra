@@ -412,6 +412,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
             onSubmit={handleSubmit}
             placeholder='Type a message... (Ctrl+B for bold, Ctrl+I for italic)'
             editorKey={editorKey}
+            autoFocus={true}
           />
         </div>
 

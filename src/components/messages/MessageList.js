@@ -174,7 +174,7 @@ function MessageList({
                 width: '100%',
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-              className={isGrouped ? 'mb-0.5' : 'mb-3'}
+              className={isGrouped ? 'mb-2' : 'mb-6'}
             >
               <MessageCard
                 message={message}

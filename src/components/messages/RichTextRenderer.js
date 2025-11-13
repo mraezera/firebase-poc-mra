@@ -42,9 +42,9 @@ const Element = ({ element }) => {
 
   switch (element.type) {
     case 'paragraph':
-      return <p className='text-sm'>{children}</p>;
+      return <p className='text-sm mb-0'>{children}</p>;
     default:
-      return <p className='text-sm'>{children}</p>;
+      return <p className='text-sm mb-0'>{children}</p>;
   }
 };
 

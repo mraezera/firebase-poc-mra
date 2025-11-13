@@ -318,7 +318,7 @@ function MessageCard({
                       </div>
                     )}
 
-                    {/* Message Reactions */}
+                    {/* Message Reactions - inside bubble */}
                     <MessageReactions
                       reactions={message.reactions}
                       currentUserId={currentUserId}
