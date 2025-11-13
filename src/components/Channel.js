@@ -9,6 +9,7 @@
   query,
   serverTimestamp,
 } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import { useEffect, useState } from 'react';
 
 import Message from './Message';
@@ -89,6 +90,7 @@ const Channel = ({ user = null, db = null }) => {
             value={newMessage}
             onChange={handleOnChange}
             placeholder='Type a message...'
+            aria-label='Type a message'
             className='flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#036100] focus:border-transparent'
           />
           <button
@@ -102,6 +104,15 @@ const Channel = ({ user = null, db = null }) => {
       </div>
     </div>
   );
+};
+
+Channel.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+  }),
+  db: PropTypes.object,
 };
 
 export default Channel;

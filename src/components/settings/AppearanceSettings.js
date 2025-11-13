@@ -72,7 +72,7 @@ function AppearanceSettings() {
 
       {/* Theme */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-3'>Theme</label>
+        <div className='block text-sm font-medium text-gray-700 mb-3'>Theme</div>
         <div className='grid grid-cols-2 gap-4'>
           <button
             onClick={() => setTheme('light')}
@@ -128,7 +128,7 @@ function AppearanceSettings() {
 
       {/* Accent Color */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-3'>Accent Color</label>
+        <div className='block text-sm font-medium text-gray-700 mb-3'>Accent Color</div>
         <div className='grid grid-cols-3 gap-3'>
           {accentColors.map(color => (
             <button
@@ -149,7 +149,7 @@ function AppearanceSettings() {
 
       {/* Font Size */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-3'>Font Size</label>
+        <div className='block text-sm font-medium text-gray-700 mb-3'>Font Size</div>
         <div className='grid grid-cols-3 gap-4'>
           {[
             { value: 'small', label: 'Small', size: 'text-sm' },

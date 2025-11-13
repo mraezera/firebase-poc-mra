@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
+import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
 import EmojiPicker from '../common/EmojiPicker';
@@ -533,5 +534,23 @@ function MessageCard({
     </div>
   );
 }
+
+MessageCard.propTypes = {
+  message: PropTypes.object.isRequired,
+  isOwnMessage: PropTypes.bool.isRequired,
+  showAvatar: PropTypes.bool.isRequired,
+  currentUserId: PropTypes.string.isRequired,
+  onReply: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  isEditing: PropTypes.bool.isRequired,
+  onSaveEdit: PropTypes.func.isRequired,
+  onCancelEdit: PropTypes.func.isRequired,
+  onReact: PropTypes.func.isRequired,
+  onPin: PropTypes.func.isRequired,
+  onForward: PropTypes.func.isRequired,
+  _searchQuery: PropTypes.string,
+  isHighlighted: PropTypes.bool,
+};
 
 export default MessageCard;

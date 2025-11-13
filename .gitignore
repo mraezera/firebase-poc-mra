@@ -7,6 +7,7 @@
 
 # testing
 /coverage
+.eslintcache
 
 # production
 /build
@@ -38,3 +39,6 @@ Thumbs.db
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+
+# Claude
+.claude/settings.local.json

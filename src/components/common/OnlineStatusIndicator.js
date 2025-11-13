@@ -1,4 +1,5 @@
 import { formatDistanceToNow } from 'date-fns';
+import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
 import { presenceService } from '../../services/presenceService';
@@ -49,5 +50,11 @@ function OnlineStatusIndicator({ userId, showLastSeen = false, size = 'md' }) {
     />
   );
 }
+
+OnlineStatusIndicator.propTypes = {
+  userId: PropTypes.string.isRequired,
+  showLastSeen: PropTypes.bool,
+  size: PropTypes.oneOf(['sm', 'md', 'lg']),
+};
 
 export default OnlineStatusIndicator;

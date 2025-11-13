@@ -1,4 +1,5 @@
 import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import { db } from '../../firebase/config';
@@ -418,5 +419,17 @@ function NewConversationModal({ isOpen, onClose, user, conversations, onConversa
     </div>
   );
 }
+
+NewConversationModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  user: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+  }).isRequired,
+  conversations: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onConversationCreated: PropTypes.func.isRequired,
+};
 
 export default NewConversationModal;

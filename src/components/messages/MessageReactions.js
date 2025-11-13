@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 /**
@@ -82,5 +83,12 @@ function MessageReactions({ reactions = {}, currentUserId, onAddReaction, onRemo
     </div>
   );
 }
+
+MessageReactions.propTypes = {
+  reactions: PropTypes.object,
+  currentUserId: PropTypes.string.isRequired,
+  onAddReaction: PropTypes.func.isRequired,
+  onRemoveReaction: PropTypes.func.isRequired,
+};
 
 export default MessageReactions;

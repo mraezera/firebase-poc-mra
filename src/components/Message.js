@@ -1,4 +1,5 @@
 ﻿import { formatRelative } from 'date-fns';
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Message = ({
@@ -66,6 +67,19 @@ const Message = ({
       )}
     </div>
   );
+};
+
+Message.propTypes = {
+  id: PropTypes.string,
+  createdAt: PropTypes.object,
+  text: PropTypes.string,
+  displayName: PropTypes.string,
+  photoURL: PropTypes.string,
+  uid: PropTypes.string,
+  currentUser: PropTypes.shape({
+    uid: PropTypes.string,
+  }),
+  onDelete: PropTypes.func,
 };
 
 export default Message;

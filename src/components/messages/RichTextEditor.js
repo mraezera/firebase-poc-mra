@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { createEditor, Editor } from 'slate';
 import { Editable, ReactEditor, Slate, withReact } from 'slate-react';
@@ -44,6 +45,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
           const end = Editor.end(editor, []);
           editor.selection = { anchor: end, focus: end };
         } catch (err) {
+          console.error('Failed to focus Slate editor:', err);
           // Fallback to direct DOM focus
           try {
             if (editableRef.current) {
@@ -56,6 +58,17 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
       });
     },
     [editor]
+  );
+
+  const handleContainerKeyDown = useCallback(
+    e => {
+      // Enter or Space should focus the editor
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleContainerClick(e);
+      }
+    },
+    [handleContainerClick]
   );
 
   const handleKeyDown = event => {
@@ -86,7 +99,12 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
 
   return (
     <div
+      role="textbox"
+      tabIndex={0}
       onMouseDown={handleContainerClick}
+      onKeyDown={handleContainerKeyDown}
+      aria-label={placeholder || 'Text editor'}
+      aria-multiline="true"
       className={clsx(
         'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
         isFocused && 'ring-2 ring-primary border-transparent'
@@ -152,12 +170,10 @@ const Leaf = ({ attributes, children, leaf }) => {
 };
 
 const Element = ({ attributes, children, element }) => {
-  switch (element.type) {
-    case 'paragraph':
-      return <p {...attributes}>{children}</p>;
-    default:
-      return <p {...attributes}>{children}</p>;
+  if (element.type === 'paragraph') {
+    return <p {...attributes}>{children}</p>;
   }
+  return <p {...attributes}>{children}</p>;
 };
 
 // Helper functions to convert Slate to/from plain text
@@ -226,5 +242,26 @@ export const jsonToSlate = jsonString => {
 
 // Import Node for serializeSlate
 const Node = { string: n => (n.children ? n.children.map(c => c.text || '').join('') : '') };
+
+RichTextEditor.propTypes = {
+  value: PropTypes.array,
+  onChange: PropTypes.func.isRequired,
+  onSubmit: PropTypes.func,
+  placeholder: PropTypes.string,
+  editorKey: PropTypes.number,
+  variant: PropTypes.oneOf(['default', 'large']),
+};
+
+Element.propTypes = {
+  attributes: PropTypes.object.isRequired,
+  children: PropTypes.node.isRequired,
+  element: PropTypes.object.isRequired,
+};
+
+Leaf.propTypes = {
+  attributes: PropTypes.object.isRequired,
+  children: PropTypes.node.isRequired,
+  leaf: PropTypes.object.isRequired,
+};
 
 export default RichTextEditor;

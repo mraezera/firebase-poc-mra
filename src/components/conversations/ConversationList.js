@@ -70,10 +70,8 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
       const isArchived = conv.userPreferences?.[user.uid]?.archived || false;
       if (showArchived) {
         return isArchived;
-      } else {
-        if (isArchived) {
-          return false;
-        }
+      } else if (isArchived) {
+        return false;
       }
 
       // Filter by search query
@@ -173,6 +171,7 @@ function ConversationList({ user, selectedConversation, onSelectConversation }) 
             placeholder='Search conversations...'
             value={searchQuery}
             onChange={e => setSearchQuery(e.target.value)}
+            aria-label='Search conversations'
             className='w-full px-4 py-2 pl-10 bg-gray-100 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent'
           />
           <svg

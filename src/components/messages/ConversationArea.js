@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import PropTypes from 'prop-types';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
 import { db, storage } from '../../firebase/config';
@@ -702,5 +703,21 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     </div>
   );
 }
+
+ConversationArea.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+  }).isRequired,
+  conversation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['direct', 'group']),
+    name: PropTypes.string,
+    participants: PropTypes.arrayOf(PropTypes.string),
+    participantsData: PropTypes.object,
+  }),
+  onToggleRightPanel: PropTypes.func.isRequired,
+};
 
 export default ConversationArea;

@@ -9,6 +9,7 @@ import {
   updateDoc,
   where,
 } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import { db } from '../../firebase/config';
@@ -283,6 +284,7 @@ function ConversationDetails({ conversation, currentUser, onClose }) {
                   onChange={e => setSearchEmail(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleSearchUser()}
                   placeholder='user@example.com'
+                  aria-label='Search user by email'
                   className='flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
                 />
                 <button
@@ -504,5 +506,22 @@ function ConversationDetails({ conversation, currentUser, onClose }) {
     </div>
   );
 }
+
+ConversationDetails.propTypes = {
+  conversation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['direct', 'group']),
+    name: PropTypes.string,
+    participants: PropTypes.arrayOf(PropTypes.string),
+    participantsData: PropTypes.object,
+    userPreferences: PropTypes.object,
+  }),
+  currentUser: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+  }).isRequired,
+  onClose: PropTypes.func.isRequired,
+};
 
 export default ConversationDetails;

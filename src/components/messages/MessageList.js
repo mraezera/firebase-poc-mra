@@ -1,5 +1,6 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { format, isSameDay, isToday, isYesterday } from 'date-fns';
+import PropTypes from 'prop-types';
 import React, { useEffect, useRef } from 'react';
 
 import MessageCard from './MessageCard';
@@ -199,5 +200,21 @@ function MessageList({
     </div>
   );
 }
+
+MessageList.propTypes = {
+  messages: PropTypes.arrayOf(PropTypes.object).isRequired,
+  currentUserId: PropTypes.string.isRequired,
+  onReply: PropTypes.func.isRequired,
+  onEdit: PropTypes.func.isRequired,
+  onDelete: PropTypes.func.isRequired,
+  onReact: PropTypes.func.isRequired,
+  onPin: PropTypes.func.isRequired,
+  onForward: PropTypes.func.isRequired,
+  editingMessage: PropTypes.object,
+  onSaveEdit: PropTypes.func.isRequired,
+  onCancelEdit: PropTypes.func.isRequired,
+  searchQuery: PropTypes.string,
+  highlightedMessageId: PropTypes.string,
+};
 
 export default MessageList;

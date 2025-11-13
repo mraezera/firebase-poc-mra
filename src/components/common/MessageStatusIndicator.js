@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React from 'react';
 
 /**
@@ -123,5 +124,12 @@ function getStatusText(status, isRead, isDelivered) {
 
   return 'Sending...';
 }
+
+MessageStatusIndicator.propTypes = {
+  status: PropTypes.string,
+  readBy: PropTypes.object,
+  deliveredTo: PropTypes.object,
+  currentUserId: PropTypes.string.isRequired,
+};
 
 export default MessageStatusIndicator;

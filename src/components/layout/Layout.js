@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import ConversationDetails from '../conversations/ConversationDetails';
@@ -41,5 +42,13 @@ function Layout({ user }) {
     </div>
   );
 }
+
+Layout.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+  }).isRequired,
+};
 
 export default Layout;

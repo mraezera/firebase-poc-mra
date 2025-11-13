@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { formatDistanceToNow } from 'date-fns';
+import PropTypes from 'prop-types';
 import React from 'react';
 
 import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
@@ -151,5 +152,22 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
     </div>
   );
 }
+
+ConversationCard.propTypes = {
+  conversation: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    type: PropTypes.oneOf(['direct', 'group']),
+    name: PropTypes.string,
+    photoURL: PropTypes.string,
+    participants: PropTypes.arrayOf(PropTypes.string),
+    participantsData: PropTypes.object,
+    lastMessage: PropTypes.object,
+    userPreferences: PropTypes.object,
+  }).isRequired,
+  currentUserId: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool.isRequired,
+  onClick: PropTypes.func.isRequired,
+  unreadCount: PropTypes.number,
+};
 
 export default ConversationCard;

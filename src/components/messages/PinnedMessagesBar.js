@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 /**
@@ -156,5 +157,11 @@ function PinnedMessagesBar({ pinnedMessages, onUnpin, onScrollToMessage }) {
     </div>
   );
 }
+
+PinnedMessagesBar.propTypes = {
+  pinnedMessages: PropTypes.arrayOf(PropTypes.object).isRequired,
+  onUnpin: PropTypes.func,
+  onScrollToMessage: PropTypes.func,
+};
 
 export default PinnedMessagesBar;

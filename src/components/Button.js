@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 const Button = ({ onClick = null, children = null }) => {
@@ -9,6 +10,11 @@ const Button = ({ onClick = null, children = null }) => {
       {children}
     </button>
   );
+};
+
+Button.propTypes = {
+  onClick: PropTypes.func,
+  children: PropTypes.node,
 };
 
 export default Button;

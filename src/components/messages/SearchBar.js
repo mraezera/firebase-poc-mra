@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 /**
@@ -90,6 +91,7 @@ function SearchBar({ onSearch, onClear, resultsCount = 0, currentIndex = 0, onNe
               value={searchText}
               onChange={handleChange}
               placeholder='Search in conversation...'
+              aria-label='Search in conversation'
               className='w-full outline-none text-sm'
               autoFocus
             />
@@ -185,5 +187,14 @@ function SearchBar({ onSearch, onClear, resultsCount = 0, currentIndex = 0, onNe
     </div>
   );
 }
+
+SearchBar.propTypes = {
+  onSearch: PropTypes.func.isRequired,
+  onClear: PropTypes.func,
+  resultsCount: PropTypes.number,
+  currentIndex: PropTypes.number,
+  onNext: PropTypes.func.isRequired,
+  onPrevious: PropTypes.func.isRequired,
+};
 
 export default SearchBar;

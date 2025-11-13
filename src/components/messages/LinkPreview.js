@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 /**
@@ -64,5 +65,13 @@ function LinkPreview({ url, title, description, image, favicon }) {
     </div>
   );
 }
+
+LinkPreview.propTypes = {
+  url: PropTypes.string.isRequired,
+  title: PropTypes.string,
+  description: PropTypes.string,
+  image: PropTypes.string,
+  favicon: PropTypes.string,
+};
 
 export default LinkPreview;

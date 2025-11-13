@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 /**
@@ -41,5 +42,10 @@ function EmojiPicker({ onEmojiSelect, onClose }) {
     </div>
   );
 }
+
+EmojiPicker.propTypes = {
+  onEmojiSelect: PropTypes.func.isRequired,
+  onClose: PropTypes.func,
+};
 
 export default EmojiPicker;

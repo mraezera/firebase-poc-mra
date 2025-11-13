@@ -1,4 +1,5 @@
 import { doc, updateDoc } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
 import { db } from '../../firebase/config';
@@ -254,5 +255,11 @@ function PrivacySettings({ user }) {
     </div>
   );
 }
+
+PrivacySettings.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+  }).isRequired,
+};
 
 export default PrivacySettings;

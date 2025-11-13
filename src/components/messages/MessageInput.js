@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
 
 import { presenceService } from '../../services/presenceService';
@@ -450,5 +451,12 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
     </div>
   );
 }
+
+MessageInput.propTypes = {
+  onSendMessage: PropTypes.func.isRequired,
+  replyTo: PropTypes.object,
+  onCancelReply: PropTypes.func.isRequired,
+  conversationId: PropTypes.string.isRequired,
+};
 
 export default MessageInput;

@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
 /**
@@ -148,5 +149,12 @@ function ImageViewerModal({ isOpen, onClose, images, initialIndex = 0 }) {
     </div>
   );
 }
+
+ImageViewerModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  images: PropTypes.arrayOf(PropTypes.object).isRequired,
+  initialIndex: PropTypes.number,
+};
 
 export default ImageViewerModal;

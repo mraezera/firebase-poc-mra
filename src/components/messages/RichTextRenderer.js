@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 // Component to render rich text (Slate JSON) as HTML
@@ -63,6 +64,18 @@ const Leaf = ({ leaf }) => {
   }
 
   return <span>{children}</span>;
+};
+
+RichTextRenderer.propTypes = {
+  content: PropTypes.oneOfType([PropTypes.string, PropTypes.array, PropTypes.object]),
+};
+
+Element.propTypes = {
+  element: PropTypes.object.isRequired,
+};
+
+Leaf.propTypes = {
+  leaf: PropTypes.object.isRequired,
 };
 
 export default RichTextRenderer;

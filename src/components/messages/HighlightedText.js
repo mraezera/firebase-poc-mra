@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 /**
@@ -14,20 +15,27 @@ function HighlightedText({ text, searchQuery }) {
     <span>
       {parts.map((part, index) => {
         const isMatch = part.toLowerCase() === searchQuery.toLowerCase();
+        // Create a stable key using part content and index
+        const key = `${part}-${index}`;
 
         return isMatch ? (
           <mark
-            key={index}
+            key={key}
             className='bg-yellow-200 text-gray-900 rounded px-0.5'
           >
             {part}
           </mark>
         ) : (
-          <span key={index}>{part}</span>
+          <span key={key}>{part}</span>
         );
       })}
     </span>
   );
 }
+
+HighlightedText.propTypes = {
+  text: PropTypes.string,
+  searchQuery: PropTypes.string,
+};
 
 export default HighlightedText;

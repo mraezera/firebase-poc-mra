@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import AppearanceSettings from './AppearanceSettings';
@@ -116,5 +117,11 @@ function SettingsModal({ isOpen, onClose, user }) {
     </div>
   );
 }
+
+SettingsModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  user: PropTypes.object.isRequired,
+};
 
 export default SettingsModal;

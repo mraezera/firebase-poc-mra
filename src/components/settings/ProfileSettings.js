@@ -1,6 +1,7 @@
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
 import { db, storage } from '../../firebase/config';
@@ -134,6 +135,7 @@ function ProfileSettings({ user }) {
             accept='image/*'
             onChange={handlePhotoSelect}
             className='hidden'
+            aria-label='Upload profile photo'
           />
         </div>
         <div>
@@ -145,8 +147,9 @@ function ProfileSettings({ user }) {
 
       {/* Display Name */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-2'>Display Name</label>
+        <label htmlFor='display-name' className='block text-sm font-medium text-gray-700 mb-2'>Display Name</label>
         <input
+          id='display-name'
           type='text'
           value={displayName}
           onChange={e => setDisplayName(e.target.value)}
@@ -157,8 +160,9 @@ function ProfileSettings({ user }) {
 
       {/* Email (read-only) */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-2'>Email</label>
+        <label htmlFor='email' className='block text-sm font-medium text-gray-700 mb-2'>Email</label>
         <input
+          id='email'
           type='email'
           value={user.email}
           disabled
@@ -169,8 +173,9 @@ function ProfileSettings({ user }) {
 
       {/* Status */}
       <div>
-        <label className='block text-sm font-medium text-gray-700 mb-2'>Status</label>
+        <label htmlFor='status' className='block text-sm font-medium text-gray-700 mb-2'>Status</label>
         <select
+          id='status'
           value={status}
           onChange={e => setStatus(e.target.value)}
           className='w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary'
@@ -204,5 +209,14 @@ function ProfileSettings({ user }) {
     </div>
   );
 }
+
+ProfileSettings.propTypes = {
+  user: PropTypes.shape({
+    uid: PropTypes.string.isRequired,
+    displayName: PropTypes.string,
+    photoURL: PropTypes.string,
+    email: PropTypes.string,
+  }).isRequired,
+};
 
 export default ProfileSettings;

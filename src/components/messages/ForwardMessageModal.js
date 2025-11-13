@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
 import { db } from '../../firebase/config';
@@ -194,5 +195,13 @@ function ForwardMessageModal({ isOpen, onClose, message, currentUserId, onForwar
     </div>
   );
 }
+
+ForwardMessageModal.propTypes = {
+  isOpen: PropTypes.bool.isRequired,
+  onClose: PropTypes.func.isRequired,
+  message: PropTypes.object,
+  currentUserId: PropTypes.string.isRequired,
+  onForward: PropTypes.func.isRequired,
+};
 
 export default ForwardMessageModal;

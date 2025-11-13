@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import React from 'react';
 
 /**
@@ -38,5 +39,13 @@ function TypingIndicator({ typingUsers = [] }) {
     </div>
   );
 }
+
+TypingIndicator.propTypes = {
+  typingUsers: PropTypes.arrayOf(
+    PropTypes.shape({
+      displayName: PropTypes.string,
+    })
+  ),
+};
 
 export default TypingIndicator;
