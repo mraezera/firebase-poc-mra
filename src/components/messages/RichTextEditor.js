@@ -99,12 +99,12 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
 
   return (
     <div
-      role="textbox"
+      role='textbox'
       tabIndex={0}
       onMouseDown={handleContainerClick}
       onKeyDown={handleContainerKeyDown}
       aria-label={placeholder || 'Text editor'}
-      aria-multiline="true"
+      aria-multiline='true'
       className={clsx(
         'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
         isFocused && 'ring-2 ring-primary border-transparent'
@@ -173,6 +173,7 @@ const Element = ({ attributes, children, element }) => {
   if (element.type === 'paragraph') {
     return <p {...attributes}>{children}</p>;
   }
+
   return <p {...attributes}>{children}</p>;
 };
 

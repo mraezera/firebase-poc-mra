@@ -147,7 +147,12 @@ function ProfileSettings({ user }) {
 
       {/* Display Name */}
       <div>
-        <label htmlFor='display-name' className='block text-sm font-medium text-gray-700 mb-2'>Display Name</label>
+        <label
+          htmlFor='display-name'
+          className='block text-sm font-medium text-gray-700 mb-2'
+        >
+          Display Name
+        </label>
         <input
           id='display-name'
           type='text'
@@ -160,7 +165,12 @@ function ProfileSettings({ user }) {
 
       {/* Email (read-only) */}
       <div>
-        <label htmlFor='email' className='block text-sm font-medium text-gray-700 mb-2'>Email</label>
+        <label
+          htmlFor='email'
+          className='block text-sm font-medium text-gray-700 mb-2'
+        >
+          Email
+        </label>
         <input
           id='email'
           type='email'
@@ -173,7 +183,12 @@ function ProfileSettings({ user }) {
 
       {/* Status */}
       <div>
-        <label htmlFor='status' className='block text-sm font-medium text-gray-700 mb-2'>Status</label>
+        <label
+          htmlFor='status'
+          className='block text-sm font-medium text-gray-700 mb-2'
+        >
+          Status
+        </label>
         <select
           id='status'
           value={status}
