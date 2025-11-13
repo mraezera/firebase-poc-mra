@@ -1,10 +1,10 @@
-import React, { useCallback, useMemo, useState, useRef } from 'react';
-import { createEditor, Editor } from 'slate';
-import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
 import clsx from 'clsx';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { createEditor, Editor } from 'slate';
+import { Editable, ReactEditor, Slate, withReact } from 'slate-react';
 
 const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }) => {
-  const editor = useMemo(() => withReact(createEditor()), [editorKey]);
+  const editor = useMemo(() => withReact(createEditor()), []);
   const [isFocused, setIsFocused] = useState(false);
   const editableRef = useRef(null);
 
@@ -22,44 +22,48 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
       containerMinHeight: '48px',
       editableMinHeight: '20px',
       editableMaxHeight: '100px',
-    }
+    },
   };
 
   const sizeConfig = sizes[variant] || sizes.default;
 
-  const renderLeaf = useCallback((props) => <Leaf {...props} />, []);
-  const renderElement = useCallback((props) => <Element {...props} />, []);
+  const renderLeaf = useCallback(props => <Leaf {...props} />, []);
+  const renderElement = useCallback(props => <Element {...props} />, []);
 
   // Handle clicking anywhere in the container to focus the editor
-  const handleContainerClick = useCallback((e) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleContainerClick = useCallback(
+    e => {
+      e.preventDefault();
+      e.stopPropagation();
 
-    // Use requestAnimationFrame for better timing
-    requestAnimationFrame(() => {
-      try {
-        ReactEditor.focus(editor);
-        // Move cursor to the end of the content
-        const end = Editor.end(editor, []);
-        editor.selection = { anchor: end, focus: end };
-      } catch (err) {
-        // Fallback to direct DOM focus
+      // Use requestAnimationFrame for better timing
+      requestAnimationFrame(() => {
         try {
-          if (editableRef.current) {
-            editableRef.current.focus();
+          ReactEditor.focus(editor);
+          // Move cursor to the end of the content
+          const end = Editor.end(editor, []);
+          editor.selection = { anchor: end, focus: end };
+        } catch (err) {
+          // Fallback to direct DOM focus
+          try {
+            if (editableRef.current) {
+              editableRef.current.focus();
+            }
+          } catch (e) {
+            console.error('Failed to focus editor:', e);
           }
-        } catch (e) {
-          console.error('Failed to focus editor:', e);
         }
-      }
-    });
-  }, [editor]);
+      });
+    },
+    [editor]
+  );
 
-  const handleKeyDown = (event) => {
+  const handleKeyDown = event => {
     // Submit on Enter (without Shift)
     if (event.key === 'Enter' && !event.shiftKey) {
       event.preventDefault();
       onSubmit();
+
       return;
     }
 
@@ -67,6 +71,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
     if (event.ctrlKey && event.key === 'b') {
       event.preventDefault();
       toggleMark(editor, 'bold');
+
       return;
     }
 
@@ -74,6 +79,7 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
     if (event.ctrlKey && event.key === 'i') {
       event.preventDefault();
       toggleMark(editor, 'italic');
+
       return;
     }
   };
@@ -125,6 +131,7 @@ const toggleMark = (editor, format) => {
 
 const isMarkActive = (editor, format) => {
   const marks = Editor.marks(editor);
+
   return marks ? marks[format] === true : false;
 };
 
@@ -154,11 +161,11 @@ const Element = ({ attributes, children, element }) => {
 };
 
 // Helper functions to convert Slate to/from plain text
-export const serializeSlate = (nodes) => {
+export const serializeSlate = nodes => {
   return nodes.map(n => Node.string(n)).join('\n');
 };
 
-export const deserializeSlate = (text) => {
+export const deserializeSlate = text => {
   if (!text || text.trim() === '') {
     return [{ type: 'paragraph', children: [{ text: '' }] }];
   }
@@ -173,41 +180,51 @@ export const createEmptySlateValue = () => {
   return [{ type: 'paragraph', children: [{ text: '' }] }];
 };
 
-export const isSlateEmpty = (nodes) => {
-  if (!nodes || nodes.length === 0) return true;
+export const isSlateEmpty = nodes => {
+  if (!nodes || nodes.length === 0) {
+    return true;
+  }
   if (nodes.length === 1 && nodes[0].children.length === 1) {
     return nodes[0].children[0].text === '';
   }
+
   return false;
 };
 
 // Helper to convert Slate to plain text for storage
-export const slateToPlainText = (nodes) => {
-  if (!nodes || nodes.length === 0) return '';
-  return nodes.map(n => {
-    if (!n.children) return '';
-    return n.children.map(child => child.text || '').join('');
-  }).join('\n');
+export const slateToPlainText = nodes => {
+  if (!nodes || nodes.length === 0) {
+    return '';
+  }
+
+  return nodes
+    .map(n => {
+      if (!n.children) {
+        return '';
+      }
+
+      return n.children.map(child => child.text || '').join('');
+    })
+    .join('\n');
 };
 
 // Helper to convert Slate to JSON string
-export const slateToJSON = (nodes) => {
+export const slateToJSON = nodes => {
   return JSON.stringify(nodes);
 };
 
 // Helper to parse JSON to Slate
-export const jsonToSlate = (jsonString) => {
+export const jsonToSlate = jsonString => {
   try {
     const parsed = JSON.parse(jsonString);
-    return Array.isArray(parsed) && parsed.length > 0
-      ? parsed
-      : createEmptySlateValue();
+
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : createEmptySlateValue();
   } catch (e) {
     return createEmptySlateValue();
   }
 };
 
 // Import Node for serializeSlate
-const Node = { string: (n) => n.children ? n.children.map(c => c.text || '').join('') : '' };
+const Node = { string: n => (n.children ? n.children.map(c => c.text || '').join('') : '') };
 
 export default RichTextEditor;

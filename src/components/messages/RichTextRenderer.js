@@ -16,9 +16,12 @@ function RichTextRenderer({ content }) {
   }
 
   return (
-    <div className="whitespace-pre-wrap break-words">
+    <div className='whitespace-pre-wrap break-words'>
       {nodes.map((node, index) => (
-        <Element key={index} element={node} />
+        <Element
+          key={index}
+          element={node}
+        />
       ))}
     </div>
   );
@@ -30,14 +33,17 @@ const Element = ({ element }) => {
   }
 
   const children = element.children.map((child, index) => (
-    <Leaf key={index} leaf={child} />
+    <Leaf
+      key={index}
+      leaf={child}
+    />
   ));
 
   switch (element.type) {
     case 'paragraph':
-      return <p className="text-sm">{children}</p>;
+      return <p className='text-sm'>{children}</p>;
     default:
-      return <p className="text-sm">{children}</p>;
+      return <p className='text-sm'>{children}</p>;
   }
 };
 

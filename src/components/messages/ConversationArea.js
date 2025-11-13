@@ -1,16 +1,28 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { collection, query, orderBy, limit, onSnapshot, addDoc, serverTimestamp, doc, updateDoc, increment } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import {
+  addDoc,
+  collection,
+  doc,
+  increment,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+} from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+
 import { db, storage } from '../../firebase/config';
-import MessageList from './MessageList';
-import MessageInput from './MessageInput';
-import PinnedMessagesBar from './PinnedMessagesBar';
-import ForwardMessageModal from './ForwardMessageModal';
-import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
-import TypingIndicator from '../common/TypingIndicator';
-import SearchBar from './SearchBar';
 import { presenceService } from '../../services/presenceService';
 import { generateLinkPreviews } from '../../utils/linkPreview';
+import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
+import TypingIndicator from '../common/TypingIndicator';
+import ForwardMessageModal from './ForwardMessageModal';
+import MessageInput from './MessageInput';
+import MessageList from './MessageList';
+import PinnedMessagesBar from './PinnedMessagesBar';
+import SearchBar from './SearchBar';
 
 function ConversationArea({ user, conversation, onToggleRightPanel }) {
   const [messages, setMessages] = useState([]);
@@ -33,7 +45,10 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       .filter(msg => msg.isPinned)
       .sort((a, b) => {
         // Sort by pinnedAt timestamp, most recent first
-        if (!a.pinnedAt || !b.pinnedAt) return 0;
+        if (!a.pinnedAt || !b.pinnedAt) {
+          return 0;
+        }
+
         return b.pinnedAt.toMillis() - a.pinnedAt.toMillis();
       });
   }, [messages]);
@@ -43,6 +58,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       setMessages([]);
       // Clear processed messages when conversation changes
       processedMessagesRef.current.clear();
+
       return;
     }
 
@@ -50,24 +66,30 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     const messagesRef = collection(db, `conversations/${conversation.id}/messages`);
     const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(100));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const messageData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })).reverse();
-      setMessages(messageData);
-      setLoading(false);
-    }, (error) => {
-      console.error('Error fetching messages:', error);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      snapshot => {
+        const messageData = snapshot.docs
+          .map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .reverse();
+        setMessages(messageData);
+        setLoading(false);
+      },
+      error => {
+        console.error('Error fetching messages:', error);
+        setLoading(false);
+      }
+    );
 
     // Mark conversation as read (reset unread count)
     const markAsRead = async () => {
       try {
         const conversationRef = doc(db, 'conversations', conversation.id);
         await updateDoc(conversationRef, {
-          [`unreadCount.${user.uid}`]: 0
+          [`unreadCount.${user.uid}`]: 0,
         });
       } catch (error) {
         console.error('Error marking conversation as read:', error);
@@ -77,11 +99,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     markAsRead();
 
     // Subscribe to typing indicators
-    const unsubscribeTyping = presenceService.subscribeToTypingIndicators(
-      conversation.id,
-      user.uid,
-      setTypingUsers
-    );
+    const unsubscribeTyping = presenceService.subscribeToTypingIndicators(conversation.id, user.uid, setTypingUsers);
 
     return () => {
       unsubscribe();
@@ -92,14 +110,17 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   // Separate effect for marking messages as delivered/read
   // Only runs when message IDs change, not when message content changes
   useEffect(() => {
-    if (!conversation || messages.length === 0) return;
+    if (!conversation || messages.length === 0) {
+      return;
+    }
 
     const markMessagesAsDelivered = async () => {
       try {
-        const undeliveredMessages = messages.filter(msg =>
-          msg.senderId !== user.uid &&
-          (!msg.deliveredTo || !msg.deliveredTo[user.uid]) &&
-          !processedMessagesRef.current.has(`delivered-${msg.id}`)
+        const undeliveredMessages = messages.filter(
+          msg =>
+            msg.senderId !== user.uid &&
+            (!msg.deliveredTo || !msg.deliveredTo[user.uid]) &&
+            !processedMessagesRef.current.has(`delivered-${msg.id}`)
         );
 
         if (undeliveredMessages.length > 0) {
@@ -109,7 +130,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             batch.push(
               updateDoc(messageRef, {
                 [`deliveredTo.${user.uid}`]: serverTimestamp(),
-                status: 'delivered'
+                status: 'delivered',
               })
             );
             // Mark as processed
@@ -125,10 +146,11 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
 
     const markMessagesAsRead = async () => {
       try {
-        const unreadMessages = messages.filter(msg =>
-          msg.senderId !== user.uid &&
-          (!msg.readBy || !msg.readBy[user.uid]) &&
-          !processedMessagesRef.current.has(`read-${msg.id}`)
+        const unreadMessages = messages.filter(
+          msg =>
+            msg.senderId !== user.uid &&
+            (!msg.readBy || !msg.readBy[user.uid]) &&
+            !processedMessagesRef.current.has(`read-${msg.id}`)
         );
 
         if (unreadMessages.length > 0) {
@@ -137,7 +159,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             const messageRef = doc(db, `conversations/${conversation.id}/messages`, msg.id);
             batch.push(
               updateDoc(messageRef, {
-                [`readBy.${user.uid}`]: serverTimestamp()
+                [`readBy.${user.uid}`]: serverTimestamp(),
               })
             );
             // Mark as processed
@@ -154,15 +176,19 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     markMessagesAsDelivered();
     markMessagesAsRead();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conversation?.id, user.uid, messages.map(m => m.id).join(',')]);  // Only trigger when message IDs change
+  }, [conversation?.id, user.uid, messages.map(m => m.id).join(',')]); // Only trigger when message IDs change
 
-  const handleSendMessage = async (messageData) => {
-    if (!conversation) return;
+  const handleSendMessage = async messageData => {
+    if (!conversation) {
+      return;
+    }
 
     const { plainText, richText, replyTo: replyToMessage, images = [], files = [] } = messageData;
 
     // Must have either text or attachments
-    if ((!plainText || !plainText.trim()) && images.length === 0 && files.length === 0) return;
+    if ((!plainText || !plainText.trim()) && images.length === 0 && files.length === 0) {
+      return;
+    }
 
     try {
       const messagesRef = collection(db, `conversations/${conversation.id}/messages`);
@@ -182,7 +208,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             url: downloadURL,
             name: imageFile.name,
             size: imageFile.size,
-            contentType: imageFile.type
+            contentType: imageFile.type,
           });
         }
       }
@@ -201,7 +227,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             url: downloadURL,
             name: file.name,
             size: file.size,
-            contentType: file.type
+            contentType: file.type,
           });
         }
       }
@@ -234,21 +260,23 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         editedAt: null,
         deletedAt: null,
         deletedFor: [],
-        replyTo: replyToMessage ? {
-          messageId: replyToMessage.id,
-          text: replyToMessage.text || replyToMessage.plainText,
-          plainText: replyToMessage.plainText,
-          senderId: replyToMessage.senderId,
-          senderName: replyToMessage.senderName
-        } : null,
+        replyTo: replyToMessage
+          ? {
+              messageId: replyToMessage.id,
+              text: replyToMessage.text || replyToMessage.plainText,
+              plainText: replyToMessage.plainText,
+              senderId: replyToMessage.senderId,
+              senderName: replyToMessage.senderName,
+            }
+          : null,
         attachments,
         linkPreviews,
         // Message status tracking
         status: 'sent',
         readBy: {},
         deliveredTo: {
-          [user.uid]: serverTimestamp() // Mark as delivered to sender immediately
-        }
+          [user.uid]: serverTimestamp(), // Mark as delivered to sender immediately
+        },
       };
 
       await addDoc(messagesRef, newMessage);
@@ -264,7 +292,8 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         }
       });
 
-      const lastMessageText = plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : '');
+      const lastMessageText =
+        plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : '');
 
       await updateDoc(conversationRef, {
         lastMessage: {
@@ -273,10 +302,10 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           senderId: user.uid,
           senderName: user.displayName,
           createdAt: serverTimestamp(),
-          type: messageType
+          type: messageType,
         },
         updatedAt: serverTimestamp(),
-        ...unreadUpdates
+        ...unreadUpdates,
       });
     } catch (error) {
       console.error('Error sending message:', error);
@@ -284,7 +313,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     }
   };
 
-  const handleReply = (message) => {
+  const handleReply = message => {
     setReplyTo(message);
   };
 
@@ -292,13 +321,15 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     setReplyTo(null);
   };
 
-  const handleEditMessage = (message) => {
+  const handleEditMessage = message => {
     setEditingMessage(message);
     setReplyTo(null); // Clear reply when editing
   };
 
   const handleSaveEdit = async (messageId, newText, newPlainText) => {
-    if (!conversation || !newPlainText.trim()) return;
+    if (!conversation || !newPlainText.trim()) {
+      return;
+    }
 
     try {
       const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
@@ -306,7 +337,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       await updateDoc(messageRef, {
         text: newText,
         plainText: newPlainText.trim(),
-        editedAt: serverTimestamp()
+        editedAt: serverTimestamp(),
       });
 
       setEditingMessage(null);
@@ -321,13 +352,15 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   };
 
   const handleDeleteMessage = async (messageId, deleteForEveryone) => {
-    if (!conversation) return;
+    if (!conversation) {
+      return;
+    }
 
-    const confirmMessage = deleteForEveryone
-      ? 'Delete this message for everyone?'
-      : 'Delete this message for you?';
+    const confirmMessage = deleteForEveryone ? 'Delete this message for everyone?' : 'Delete this message for you?';
 
-    if (!window.confirm(confirmMessage)) return;
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
 
     try {
       const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
@@ -337,12 +370,12 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         await updateDoc(messageRef, {
           deletedAt: serverTimestamp(),
           text: '[Deleted]',
-          plainText: '[Deleted]'
+          plainText: '[Deleted]',
         });
       } else {
         // Delete for me only
         await updateDoc(messageRef, {
-          deletedFor: [...(messages.find(m => m.id === messageId)?.deletedFor || []), user.uid]
+          deletedFor: [...(messages.find(m => m.id === messageId)?.deletedFor || []), user.uid],
         });
       }
     } catch (error) {
@@ -352,7 +385,9 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   };
 
   const handleReactToMessage = async (messageId, emoji, action) => {
-    if (!conversation) return;
+    if (!conversation) {
+      return;
+    }
 
     try {
       const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
@@ -363,13 +398,13 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
           [`reactions.${user.uid}`]: {
             emoji,
             userName: user.displayName,
-            timestamp: serverTimestamp()
-          }
+            timestamp: serverTimestamp(),
+          },
         });
       } else {
         // Remove reaction
         await updateDoc(messageRef, {
-          [`reactions.${user.uid}`]: null
+          [`reactions.${user.uid}`]: null,
         });
       }
     } catch (error) {
@@ -378,7 +413,9 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   };
 
   const handlePinMessage = async (messageId, shouldPin) => {
-    if (!conversation) return;
+    if (!conversation) {
+      return;
+    }
 
     try {
       const messageRef = doc(db, `conversations/${conversation.id}/messages`, messageId);
@@ -388,14 +425,14 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         await updateDoc(messageRef, {
           isPinned: true,
           pinnedAt: serverTimestamp(),
-          pinnedBy: user.uid
+          pinnedBy: user.uid,
         });
       } else {
         // Unpin the message
         await updateDoc(messageRef, {
           isPinned: false,
           pinnedAt: null,
-          pinnedBy: null
+          pinnedBy: null,
         });
       }
     } catch (error) {
@@ -404,24 +441,24 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
     }
   };
 
-  const handleScrollToMessage = (messageId) => {
-    // For now, just log the message ID
-    // In a more advanced implementation, we could scroll to the specific message
-    console.log('Scroll to message:', messageId);
-    // TODO: Implement scrolling to specific message using refs or virtualization API
+  const handleScrollToMessage = _messageId => {
+    // For now, this is a placeholder
+    // Future: Implement scrolling to specific message using refs or virtualization API
   };
 
-  const handleForwardMessage = (message) => {
+  const handleForwardMessage = message => {
     setForwardingMessage(message);
     setShowForwardModal(true);
   };
 
   const handleForwardToConversations = async (message, conversationIds) => {
-    if (!message || conversationIds.length === 0) return;
+    if (!message || conversationIds.length === 0) {
+      return;
+    }
 
     try {
       // Send the message to each selected conversation
-      const promises = conversationIds.map(async (conversationId) => {
+      const promises = conversationIds.map(async conversationId => {
         const messagesRef = collection(db, `conversations/${conversationId}/messages`);
 
         const forwardedMessage = {
@@ -443,14 +480,14 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             messageId: message.id,
             senderId: message.senderId,
             senderName: message.senderName,
-            conversationId: conversation.id
+            conversationId: conversation.id,
           },
           // Message status tracking
           status: 'sent',
           readBy: {},
           deliveredTo: {
-            [user.uid]: serverTimestamp()
-          }
+            [user.uid]: serverTimestamp(),
+          },
         };
 
         await addDoc(messagesRef, forwardedMessage);
@@ -464,38 +501,34 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
             senderId: user.uid,
             senderName: user.displayName,
             createdAt: serverTimestamp(),
-            type: 'text'
+            type: 'text',
           },
-          updatedAt: serverTimestamp()
+          updatedAt: serverTimestamp(),
         });
       });
 
       await Promise.all(promises);
-
-      // Show success message (optional)
-      console.log(`Message forwarded to ${conversationIds.length} conversation(s)`);
     } catch (error) {
       console.error('Error forwarding message:', error);
       alert('Error forwarding message: ' + error.message);
     }
   };
 
-  const handleSearch = (query) => {
+  const handleSearch = query => {
     setSearchQuery(query);
 
     if (!query.trim()) {
       setSearchResults([]);
       setCurrentSearchIndex(0);
+
       return;
     }
 
     // Search through messages
     const results = messages.filter(msg => {
       const searchText = query.toLowerCase();
-      return (
-        msg.plainText?.toLowerCase().includes(searchText) ||
-        msg.senderName?.toLowerCase().includes(searchText)
-      );
+
+      return msg.plainText?.toLowerCase().includes(searchText) || msg.senderName?.toLowerCase().includes(searchText);
     });
 
     setSearchResults(results);
@@ -521,7 +554,9 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
   };
 
   const getConversationName = () => {
-    if (!conversation) return '';
+    if (!conversation) {
+      return '';
+    }
 
     if (conversation.type === 'group') {
       return conversation.name || 'Group Chat';
@@ -529,47 +564,54 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
 
     const otherUserId = conversation.participants.find(id => id !== user.uid);
     const otherUserData = conversation.participantsData?.[otherUserId];
+
     return otherUserData?.displayName || 'Unknown User';
   };
 
   if (!conversation) {
     return (
-      <div className="flex items-center justify-center h-full bg-background">
-        <div className="text-center">
-          <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      <div className='flex items-center justify-center h-full bg-background'>
+        <div className='text-center'>
+          <div className='w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4'>
+            <svg
+              className='w-12 h-12 text-gray-400'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
+              />
             </svg>
           </div>
-          <h3 className="text-xl font-semibold text-gray-700 mb-2">Welcome to Chat</h3>
-          <p className="text-gray-500">Select a conversation to start messaging</p>
+          <h3 className='text-xl font-semibold text-gray-700 mb-2'>Welcome to Chat</h3>
+          <p className='text-gray-500'>Select a conversation to start messaging</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full bg-background">
+    <div className='flex flex-col h-full bg-background'>
       {/* Header */}
-      <div className="bg-background-card border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center space-x-3">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {getConversationName()}
-          </h2>
+      <div className='bg-background-card border-b border-gray-200 px-6 py-4 flex items-center justify-between flex-shrink-0'>
+        <div className='flex items-center space-x-3'>
+          <h2 className='text-xl font-semibold text-gray-900'>{getConversationName()}</h2>
           {conversation.type === 'group' ? (
-            <span className="text-sm text-gray-500">
-              {conversation.participants.length} members
-            </span>
+            <span className='text-sm text-gray-500'>{conversation.participants.length} members</span>
           ) : (
             <OnlineStatusIndicator
               userId={conversation.participants.find(id => id !== user.uid)}
               showLastSeen={true}
-              size="sm"
+              size='sm'
             />
           )}
         </div>
 
-        <div className="flex items-center space-x-2">
+        <div className='flex items-center space-x-2'>
           {/* Search Bar */}
           <SearchBar
             onSearch={handleSearch}
@@ -582,11 +624,21 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
 
           <button
             onClick={onToggleRightPanel}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            title="Toggle info panel"
+            className='p-2 hover:bg-gray-100 rounded-full transition-colors'
+            title='Toggle info panel'
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg
+              className='w-6 h-6 text-gray-600'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
             </svg>
           </button>
         </div>
@@ -602,11 +654,11 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex-1 overflow-auto">
+      <div className='flex-1 overflow-hidden flex flex-col'>
+        <div className='flex-1 overflow-auto'>
           {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <div className="text-gray-500">Loading messages...</div>
+            <div className='flex items-center justify-center h-full'>
+              <div className='text-gray-500'>Loading messages...</div>
             </div>
           ) : (
             <MessageList

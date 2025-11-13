@@ -1,5 +1,4 @@
 import React from 'react';
-import clsx from 'clsx';
 
 /**
  * Simple emoji picker with common reaction emojis
@@ -20,18 +19,20 @@ function EmojiPicker({ onEmojiSelect, onClose }) {
     { emoji: '🚀', name: 'rocket' },
   ];
 
-  const handleEmojiClick = (emoji) => {
+  const handleEmojiClick = emoji => {
     onEmojiSelect(emoji);
-    if (onClose) onClose();
+    if (onClose) {
+      onClose();
+    }
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 min-w-[240px]">
+    <div className='bg-white border border-gray-200 rounded-lg shadow-lg p-2 grid grid-cols-6 gap-1 min-w-[240px]'>
       {commonEmojis.map(({ emoji, name }) => (
         <button
           key={emoji}
           onClick={() => handleEmojiClick(emoji)}
-          className="w-8 h-8 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition-colors"
+          className='w-8 h-8 flex items-center justify-center text-xl hover:bg-gray-100 rounded transition-colors'
           title={name}
         >
           {emoji}

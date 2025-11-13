@@ -16,6 +16,7 @@
     "react-dom": "^19.2.0",
     "react-scripts": "5.0.1",
     "slate": "^0.118.1",
+    "slate-dom": "^0.119.0",
     "slate-react": "^0.119.0",
     "web-vitals": "^2.1.4"
   },
@@ -23,13 +24,11 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+    "eject": "react-scripts eject",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings=0 --cache --color",
+    "lint:fix": "eslint . --cache --fix --ext js,jsx --report-unused-disable-directives --max-warnings=0",
+    "format": "prettier --write .",
+    "prettier:check": "prettier --check \"**/*.{js,jsx,json,css,html}\""
   },
   "browserslist": {
     "production": [
@@ -45,7 +44,15 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-promise": "^6.6.0",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
     "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
     "tailwindcss": "^3.4.18"
   }
 }

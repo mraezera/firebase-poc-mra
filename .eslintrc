@@ -1,0 +1,49 @@
+{
+  "root": true,
+  "env": { "browser": true, "es2020": true, "node": true, "jest": true },
+  "extends": [
+    "eslint:recommended",
+    "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
+    "plugin:prettier/recommended"
+  ],
+  "ignorePatterns": ["build", "node_modules"],
+  "parserOptions": {
+    "ecmaVersion": 2020,
+    "sourceType": "module",
+    "ecmaFeatures": {
+      "jsx": true
+    }
+  },
+  "plugins": ["react", "simple-import-sort", "import", "promise", "react-refresh", "prettier"],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
+  "rules": {
+    "curly": ["error", "all"],
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
+    "import/newline-after-import": "error",
+    "import/no-duplicates": "error",
+    "import/first": "error",
+    "no-nested-ternary": "error",
+    "eol-last": ["error", "always"],
+    "newline-before-return": "error",
+    "no-prototype-builtins": "off",
+    "no-console": ["error", { "allow": ["warn", "error"] }],
+    "no-warning-comments": ["error", { "terms": ["todo"], "location": "anywhere" }],
+    "react/jsx-curly-brace-presence": "error",
+    "react/prop-types": "off",
+    "react/react-in-jsx-scope": "off",
+    "no-unused-vars": [
+      "warn",
+      {
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "caughtErrorsIgnorePattern": "^_"
+      }
+    ]
+  }
+}

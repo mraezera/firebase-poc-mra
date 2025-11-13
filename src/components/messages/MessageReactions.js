@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
 import clsx from 'clsx';
+import React, { useState } from 'react';
 
 /**
  * Displays emoji reactions on a message
@@ -45,11 +45,11 @@ function MessageReactions({ reactions = {}, currentUserId, onAddReaction, onRemo
   };
 
   return (
-    <div className="flex flex-wrap gap-1 mt-1">
+    <div className='flex flex-wrap gap-1 mt-1'>
       {Object.values(groupedReactions).map(({ emoji, count, users, hasCurrentUser }) => (
         <div
           key={emoji}
-          className="relative"
+          className='relative'
           onMouseEnter={() => setShowTooltip(emoji)}
           onMouseLeave={() => setShowTooltip(null)}
         >
@@ -63,12 +63,12 @@ function MessageReactions({ reactions = {}, currentUserId, onAddReaction, onRemo
             )}
           >
             <span>{emoji}</span>
-            <span className="text-xs font-medium">{count}</span>
+            <span className='text-xs font-medium'>{count}</span>
           </button>
 
           {/* Tooltip showing who reacted */}
           {showTooltip === emoji && (
-            <div className="absolute bottom-full left-0 mb-2 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+            <div className='absolute bottom-full left-0 mb-2 bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10'>
               {users.map((user, idx) => (
                 <div key={user.userId}>
                   {user.userName}

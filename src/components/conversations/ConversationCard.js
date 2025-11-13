@@ -1,6 +1,7 @@
-import React from 'react';
-import { formatDistanceToNow } from 'date-fns';
 import clsx from 'clsx';
+import { formatDistanceToNow } from 'date-fns';
+import React from 'react';
+
 import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
 
 function ConversationCard({ conversation, currentUserId, isSelected, onClick, unreadCount = 0 }) {
@@ -11,6 +12,7 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
 
     const otherUserId = conversation.participants.find(id => id !== currentUserId);
     const otherUserData = conversation.participantsData?.[otherUserId];
+
     return otherUserData?.displayName || 'Unknown User';
   };
 
@@ -21,10 +23,11 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
 
     const otherUserId = conversation.participants.find(id => id !== currentUserId);
     const otherUserData = conversation.participantsData?.[otherUserId];
+
     return otherUserData?.photoURL || null;
   };
 
-  const getInitials = (name) => {
+  const getInitials = name => {
     return name
       .split(' ')
       .map(word => word[0])
@@ -33,8 +36,10 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
       .slice(0, 2);
   };
 
-  const formatTimestamp = (timestamp) => {
-    if (!timestamp) return '';
+  const formatTimestamp = timestamp => {
+    if (!timestamp) {
+      return '';
+    }
     try {
       return formatDistanceToNow(timestamp.toDate(), { addSuffix: true });
     } catch (error) {
@@ -53,63 +58,76 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
       onClick={onClick}
       className={clsx(
         'px-4 py-3 cursor-pointer transition-colors border-l-4',
-        isSelected
-          ? 'bg-primary-light border-primary'
-          : 'bg-transparent border-transparent hover:bg-gray-50'
+        isSelected ? 'bg-primary-light border-primary' : 'bg-transparent border-transparent hover:bg-gray-50'
       )}
     >
-      <div className="flex items-start space-x-3">
+      <div className='flex items-start space-x-3'>
         {/* Avatar */}
-        <div className="flex-shrink-0 relative">
+        <div className='flex-shrink-0 relative'>
           {photoURL ? (
             <img
               src={photoURL}
               alt={conversationName}
-              className="w-12 h-12 rounded-full object-cover"
+              className='w-12 h-12 rounded-full object-cover'
             />
           ) : (
-            <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-semibold">
+            <div className='w-12 h-12 rounded-full bg-primary flex items-center justify-center text-white font-semibold'>
               {getInitials(conversationName)}
             </div>
           )}
           {/* Show online status for direct conversations */}
           {conversation.type !== 'group' && (
-            <div className="absolute bottom-0 right-0">
+            <div className='absolute bottom-0 right-0'>
               <OnlineStatusIndicator
                 userId={conversation.participants.find(id => id !== currentUserId)}
-                size="md"
+                size='md'
               />
             </div>
           )}
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-baseline justify-between mb-1">
-            <div className="flex items-center space-x-1.5 min-w-0 flex-1">
-              <h3 className="font-semibold text-gray-900 truncate">
-                {conversationName}
-              </h3>
+        <div className='flex-1 min-w-0'>
+          <div className='flex items-baseline justify-between mb-1'>
+            <div className='flex items-center space-x-1.5 min-w-0 flex-1'>
+              <h3 className='font-semibold text-gray-900 truncate'>{conversationName}</h3>
               {isPinned && (
-                <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                <svg
+                  className='w-4 h-4 text-primary flex-shrink-0'
+                  fill='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path d='M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z' />
                 </svg>
               )}
               {isMuted && (
-                <svg className="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+                <svg
+                  className='w-4 h-4 text-gray-500 flex-shrink-0'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z'
+                  />
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2'
+                  />
                 </svg>
               )}
             </div>
-            <div className="flex items-center space-x-2 ml-2 flex-shrink-0">
+            <div className='flex items-center space-x-2 ml-2 flex-shrink-0'>
               {lastMessage?.createdAt && (
-                <span className="text-xs text-gray-500">
-                  {formatTimestamp(lastMessage.createdAt)}
-                </span>
+                <span className='text-xs text-gray-500'>{formatTimestamp(lastMessage.createdAt)}</span>
               )}
               {unreadCount > 0 && (
-                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-semibold rounded-full">
+                <span className='flex items-center justify-center min-w-[20px] h-5 px-1.5 bg-primary text-white text-xs font-semibold rounded-full'>
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
@@ -117,14 +135,12 @@ function ConversationCard({ conversation, currentUserId, isSelected, onClick, un
           </div>
 
           {lastMessage && (
-            <p className="text-sm text-gray-600 truncate">
+            <p className='text-sm text-gray-600 truncate'>
               {lastMessage.type === 'deleted' ? (
-                <span className="italic">Message deleted</span>
+                <span className='italic'>Message deleted</span>
               ) : (
                 <>
-                  {lastMessage.senderId === currentUserId && (
-                    <span className="text-gray-500">You: </span>
-                  )}
+                  {lastMessage.senderId === currentUserId && <span className='text-gray-500'>You: </span>}
                   {lastMessage.plainText || lastMessage.text || 'New message'}
                 </>
               )}

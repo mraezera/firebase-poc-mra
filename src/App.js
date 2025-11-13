@@ -1,11 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase/config';
-import Button from "./components/Button";
-import Layout from "./components/layout/Layout";
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import React, { useEffect, useState } from 'react';
+
+import Button from './components/Button';
+import Layout from './components/layout/Layout';
 import SettingsModal from './components/settings/SettingsModal';
-import { testFirebasePermissions } from './utils/testFirebase';
+import { auth } from './firebase/config';
 import { presenceService } from './services/presenceService';
+import { testFirebasePermissions } from './utils/testFirebase';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -13,12 +14,11 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async user => {
       if (user) {
         setUser(user);
 
         // Test Firebase permissions
-        console.log('🔐 Testing Firebase permissions...');
         const hasPermissions = await testFirebasePermissions(user);
 
         if (!hasPermissions) {
@@ -31,9 +31,9 @@ function App() {
           console.error('5. Click Publish');
           console.error('6. Sign out and sign back in');
 
-          alert('⚠️ Firebase permissions error!\n\nPlease check the browser console (F12) for instructions on how to fix this.\n\nYou need to update Firestore security rules in the Firebase Console.');
-        } else {
-          console.log('✅ Firebase permissions OK!');
+          alert(
+            '⚠️ Firebase permissions error!\n\nPlease check the browser console (F12) for instructions on how to fix this.\n\nYou need to update Firestore security rules in the Firebase Console.'
+          );
         }
 
         // Set user online status
@@ -80,49 +80,76 @@ function App() {
 
   if (initializing) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-gray-700 text-2xl font-semibold">Loading...</div>
+      <div className='flex items-center justify-center min-h-screen bg-background'>
+        <div className='text-gray-700 text-2xl font-semibold'>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-screen bg-background">
+    <div className='flex flex-col h-screen bg-background'>
       {user ? (
         <>
           {/* Header */}
-          <header className="bg-background-card shadow-sm border-b border-gray-200 flex-shrink-0">
-            <div className="px-6 py-3 flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          <header className='bg-background-card shadow-sm border-b border-gray-200 flex-shrink-0'>
+            <div className='px-6 py-3 flex items-center justify-between'>
+              <div className='flex items-center space-x-3'>
+                <div className='w-10 h-10 bg-primary rounded-full flex items-center justify-center'>
+                  <svg
+                    className='w-6 h-6 text-white'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
+                    />
                   </svg>
                 </div>
-                <h1 className="text-xl font-bold text-gray-900">Piche Chat</h1>
+                <h1 className='text-xl font-bold text-gray-900'>Piche Chat</h1>
               </div>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
+              <div className='flex items-center space-x-3'>
+                <div className='flex items-center space-x-2'>
                   {user.photoURL && (
-                    <img src={user.photoURL} alt={user.displayName} className="w-8 h-8 rounded-full" />
+                    <img
+                      src={user.photoURL}
+                      alt={user.displayName}
+                      className='w-8 h-8 rounded-full'
+                    />
                   )}
-                  <span className="text-gray-700 font-medium whitespace-nowrap">
-                    {user.displayName}
-                  </span>
+                  <span className='text-gray-700 font-medium whitespace-nowrap'>{user.displayName}</span>
                 </div>
                 <button
                   onClick={() => setShowSettings(true)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  title="Settings"
+                  className='p-2 hover:bg-gray-100 rounded-full transition-colors'
+                  title='Settings'
                 >
-                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <svg
+                    className='w-6 h-6 text-gray-600'
+                    fill='none'
+                    stroke='currentColor'
+                    viewBox='0 0 24 24'
+                  >
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z'
+                    />
+                    <path
+                      strokeLinecap='round'
+                      strokeLinejoin='round'
+                      strokeWidth={2}
+                      d='M15 12a3 3 0 11-6 0 3 3 0 016 0z'
+                    />
                   </svg>
                 </button>
                 <button
                   onClick={signOut}
-                  className="px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors duration-200 whitespace-nowrap"
+                  className='px-4 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark transition-colors duration-200 whitespace-nowrap'
                 >
                   Sign Out
                 </button>
@@ -131,7 +158,7 @@ function App() {
           </header>
 
           {/* Main Layout */}
-          <div className="flex-1 overflow-hidden">
+          <div className='flex-1 overflow-hidden'>
             <Layout user={user} />
           </div>
 
@@ -143,16 +170,26 @@ function App() {
           />
         </>
       ) : (
-        <div className="flex items-center justify-center min-h-screen">
-          <div className="bg-background-card rounded-2xl shadow-lg p-8 max-w-md w-full mx-4 border border-gray-200">
-            <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        <div className='flex items-center justify-center min-h-screen'>
+          <div className='bg-background-card rounded-2xl shadow-lg p-8 max-w-md w-full mx-4 border border-gray-200'>
+            <div className='text-center mb-8'>
+              <div className='w-20 h-20 bg-primary rounded-full flex items-center justify-center mx-auto mb-4'>
+                <svg
+                  className='w-12 h-12 text-white'
+                  fill='none'
+                  stroke='currentColor'
+                  viewBox='0 0 24 24'
+                >
+                  <path
+                    strokeLinecap='round'
+                    strokeLinejoin='round'
+                    strokeWidth={2}
+                    d='M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z'
+                  />
                 </svg>
               </div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to Piche Chat</h1>
-              <p className="text-gray-600">Connect with your team and chat in real-time</p>
+              <h1 className='text-3xl font-bold text-gray-900 mb-2'>Welcome to Piche Chat</h1>
+              <p className='text-gray-600'>Connect with your team and chat in real-time</p>
             </div>
             <Button onClick={signInWithGoogle}>Sign in with Google</Button>
           </div>

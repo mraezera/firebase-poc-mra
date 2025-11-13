@@ -9,9 +9,10 @@ function LinkPreview({ url, title, description, image, favicon }) {
   };
 
   // Extract domain from URL for display
-  const getDomain = (urlString) => {
+  const getDomain = urlString => {
     try {
       const urlObj = new URL(urlString);
+
       return urlObj.hostname.replace('www.', '');
     } catch (error) {
       return urlString;
@@ -21,16 +22,16 @@ function LinkPreview({ url, title, description, image, favicon }) {
   return (
     <div
       onClick={handleClick}
-      className="mt-2 border border-gray-200 rounded-lg overflow-hidden hover:bg-gray-50 cursor-pointer transition-colors max-w-md"
+      className='mt-2 border border-gray-200 rounded-lg overflow-hidden hover:bg-gray-50 cursor-pointer transition-colors max-w-md'
     >
       {/* Image */}
       {image && (
-        <div className="w-full h-48 bg-gray-100 overflow-hidden">
+        <div className='w-full h-48 bg-gray-100 overflow-hidden'>
           <img
             src={image}
             alt={title || 'Link preview'}
-            className="w-full h-full object-cover"
-            onError={(e) => {
+            className='w-full h-full object-cover'
+            onError={e => {
               e.target.style.display = 'none';
             }}
           />
@@ -38,36 +39,26 @@ function LinkPreview({ url, title, description, image, favicon }) {
       )}
 
       {/* Content */}
-      <div className="p-3 space-y-1">
+      <div className='p-3 space-y-1'>
         {/* Title */}
-        {title && (
-          <h4 className="font-semibold text-sm text-gray-900 line-clamp-2">
-            {title}
-          </h4>
-        )}
+        {title && <h4 className='font-semibold text-sm text-gray-900 line-clamp-2'>{title}</h4>}
 
         {/* Description */}
-        {description && (
-          <p className="text-xs text-gray-600 line-clamp-2">
-            {description}
-          </p>
-        )}
+        {description && <p className='text-xs text-gray-600 line-clamp-2'>{description}</p>}
 
         {/* URL/Domain */}
-        <div className="flex items-center space-x-2 pt-1">
+        <div className='flex items-center space-x-2 pt-1'>
           {favicon && (
             <img
               src={favicon}
-              alt=""
-              className="w-4 h-4"
-              onError={(e) => {
+              alt=''
+              className='w-4 h-4'
+              onError={e => {
                 e.target.style.display = 'none';
               }}
             />
           )}
-          <span className="text-xs text-gray-500 truncate">
-            {getDomain(url)}
-          </span>
+          <span className='text-xs text-gray-500 truncate'>{getDomain(url)}</span>
         </div>
       </div>
     </div>

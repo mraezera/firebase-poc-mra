@@ -1,4 +1,5 @@
-import { doc, setDoc, serverTimestamp, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+
 import { db } from '../firebase/config';
 
 class PresenceService {
@@ -11,27 +12,31 @@ class PresenceService {
    * Initialize presence tracking for the current user
    */
   async setUserOnline(user) {
-    if (!user) return;
+    if (!user) {
+      return;
+    }
 
     this.currentUser = user;
     const userStatusRef = doc(db, 'userStatus', user.uid);
 
     try {
       // Set user as online
-      await setDoc(userStatusRef, {
-        uid: user.uid,
-        displayName: user.displayName,
-        photoURL: user.photoURL || '',
-        email: user.email,
-        status: 'online',
-        lastSeen: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      }, { merge: true });
+      await setDoc(
+        userStatusRef,
+        {
+          uid: user.uid,
+          displayName: user.displayName,
+          photoURL: user.photoURL || '',
+          email: user.email,
+          status: 'online',
+          lastSeen: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
 
       // Set up automatic offline on disconnect
       this.setupDisconnectHandler(user.uid);
-
-      console.log('✅ User presence set to online');
     } catch (error) {
       console.error('Error setting user online:', error);
     }
@@ -41,7 +46,9 @@ class PresenceService {
    * Set user as offline
    */
   async setUserOffline(userId) {
-    if (!userId) return;
+    if (!userId) {
+      return;
+    }
 
     const userStatusRef = doc(db, 'userStatus', userId);
 
@@ -49,10 +56,8 @@ class PresenceService {
       await updateDoc(userStatusRef, {
         status: 'offline',
         lastSeen: serverTimestamp(),
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       });
-
-      console.log('✅ User presence set to offline');
     } catch (error) {
       console.error('Error setting user offline:', error);
     }
@@ -69,7 +74,7 @@ class PresenceService {
         try {
           await updateDoc(userStatusRef, {
             lastSeen: serverTimestamp(),
-            updatedAt: serverTimestamp()
+            updatedAt: serverTimestamp(),
           });
         } catch (error) {
           console.error('Error updating last seen:', error);
@@ -108,22 +113,28 @@ class PresenceService {
   subscribeToUserPresence(userId, callback) {
     const userStatusRef = doc(db, 'userStatus', userId);
 
-    return onSnapshot(userStatusRef, (snapshot) => {
-      if (snapshot.exists()) {
-        callback(snapshot.data());
-      } else {
-        callback({ status: 'offline' });
+    return onSnapshot(
+      userStatusRef,
+      snapshot => {
+        if (snapshot.exists()) {
+          callback(snapshot.data());
+        } else {
+          callback({ status: 'offline' });
+        }
+      },
+      error => {
+        console.error('Error subscribing to user presence:', error);
       }
-    }, (error) => {
-      console.error('Error subscribing to user presence:', error);
-    });
+    );
   }
 
   /**
    * Update typing status for a conversation
    */
   async setTypingStatus(conversationId, isTyping) {
-    if (!this.currentUser) return;
+    if (!this.currentUser) {
+      return;
+    }
 
     const conversationRef = doc(db, 'conversations', conversationId);
 
@@ -134,13 +145,13 @@ class PresenceService {
           [`typing.${this.currentUser.uid}`]: {
             userId: this.currentUser.uid,
             displayName: this.currentUser.displayName,
-            timestamp: serverTimestamp()
-          }
+            timestamp: serverTimestamp(),
+          },
         });
       } else {
         // Remove user from typing map
         await updateDoc(conversationRef, {
-          [`typing.${this.currentUser.uid}`]: null
+          [`typing.${this.currentUser.uid}`]: null,
         });
       }
     } catch (error) {
@@ -157,7 +168,7 @@ class PresenceService {
   subscribeToTypingIndicators(conversationId, currentUserId, callback) {
     const conversationRef = doc(db, 'conversations', conversationId);
 
-    return onSnapshot(conversationRef, (snapshot) => {
+    return onSnapshot(conversationRef, snapshot => {
       if (snapshot.exists()) {
         const data = snapshot.data();
         const typingUsers = [];
@@ -167,7 +178,9 @@ class PresenceService {
 
           Object.entries(data.typing).forEach(([userId, typingData]) => {
             // Skip null entries and current user
-            if (!typingData || userId === currentUserId) return;
+            if (!typingData || userId === currentUserId) {
+              return;
+            }
 
             // Check if timestamp is recent (within last 5 seconds)
             const typingTime = typingData.timestamp?.toMillis?.() || 0;

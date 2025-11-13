@@ -1,11 +1,25 @@
-import React, { useEffect, useRef } from 'react';
-import { format, isToday, isYesterday, isSameDay } from 'date-fns';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { format, isSameDay, isToday, isYesterday } from 'date-fns';
+import React, { useEffect, useRef } from 'react';
+
 import MessageCard from './MessageCard';
 
-function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onReact, onPin, onForward, editingMessage, onSaveEdit, onCancelEdit, searchQuery, highlightedMessageId }) {
+function MessageList({
+  messages,
+  currentUserId,
+  onReply,
+  onEdit,
+  onDelete,
+  onReact,
+  onPin,
+  onForward,
+  editingMessage,
+  onSaveEdit,
+  onCancelEdit,
+  searchQuery,
+  highlightedMessageId,
+}) {
   const parentRef = useRef(null);
-  const messagesEndRef = useRef(null);
 
   const scrollToBottom = () => {
     if (parentRef.current) {
@@ -17,8 +31,10 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
     scrollToBottom();
   }, [messages]);
 
-  const formatDateHeader = (timestamp) => {
-    if (!timestamp) return '';
+  const formatDateHeader = timestamp => {
+    if (!timestamp) {
+      return '';
+    }
 
     try {
       const date = timestamp.toDate();
@@ -36,12 +52,17 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
   };
 
   const shouldShowDateHeader = (currentMessage, previousMessage) => {
-    if (!currentMessage.createdAt) return false;
-    if (!previousMessage || !previousMessage.createdAt) return true;
+    if (!currentMessage.createdAt) {
+      return false;
+    }
+    if (!previousMessage || !previousMessage.createdAt) {
+      return true;
+    }
 
     try {
       const currentDate = currentMessage.createdAt.toDate();
       const previousDate = previousMessage.createdAt.toDate();
+
       return !isSameDay(currentDate, previousDate);
     } catch (error) {
       return false;
@@ -49,9 +70,7 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
   };
 
   // Filter out messages deleted for current user
-  const visibleMessages = messages.filter(
-    (msg) => !(msg.deletedFor && msg.deletedFor.includes(currentUserId))
-  );
+  const visibleMessages = messages.filter(msg => !(msg.deletedFor && msg.deletedFor.includes(currentUserId)));
 
   // Prepare items for virtualization (messages + date headers)
   const items = [];
@@ -63,14 +82,14 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
       items.push({
         type: 'date-header',
         id: `date-${message.id}`,
-        timestamp: message.createdAt
+        timestamp: message.createdAt,
       });
     }
 
     items.push({
       type: 'message',
       message,
-      index
+      index,
     });
   });
 
@@ -78,30 +97,33 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
     count: items.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 80, // Estimated height of a message
-    overscan: 5
+    overscan: 5,
   });
 
   if (visibleMessages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center text-gray-500">
+      <div className='flex items-center justify-center h-full'>
+        <div className='text-center text-gray-500'>
           <p>No messages yet</p>
-          <p className="text-sm mt-1">Send a message to start the conversation</p>
+          <p className='text-sm mt-1'>Send a message to start the conversation</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div ref={parentRef} className="h-full overflow-y-auto px-6 py-4">
+    <div
+      ref={parentRef}
+      className='h-full overflow-y-auto px-6 py-4'
+    >
       <div
         style={{
           height: `${rowVirtualizer.getTotalSize()}px`,
           width: '100%',
-          position: 'relative'
+          position: 'relative',
         }}
       >
-        {rowVirtualizer.getVirtualItems().map((virtualItem) => {
+        {rowVirtualizer.getVirtualItems().map(virtualItem => {
           const item = items[virtualItem.index];
 
           if (item.type === 'date-header') {
@@ -113,14 +135,12 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
                   top: 0,
                   left: 0,
                   width: '100%',
-                  transform: `translateY(${virtualItem.start}px)`
+                  transform: `translateY(${virtualItem.start}px)`,
                 }}
               >
-                <div className="flex items-center justify-center my-4">
-                  <div className="bg-gray-200 rounded-full px-4 py-1">
-                    <span className="text-xs font-medium text-gray-600">
-                      {formatDateHeader(item.timestamp)}
-                    </span>
+                <div className='flex items-center justify-center my-4'>
+                  <div className='bg-gray-200 rounded-full px-4 py-1'>
+                    <span className='text-xs font-medium text-gray-600'>{formatDateHeader(item.timestamp)}</span>
                   </div>
                 </div>
               </div>
@@ -133,16 +153,15 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
           const previousMessage = index > 0 ? visibleMessages[index - 1] : null;
           const nextMessage = index < visibleMessages.length - 1 ? visibleMessages[index + 1] : null;
 
-          const showAvatar = !isOwnMessage && (
-            index === 0 ||
-            !previousMessage ||
-            previousMessage.senderId !== message.senderId ||
-            shouldShowDateHeader(message, previousMessage)
-          );
+          const showAvatar =
+            !isOwnMessage &&
+            (index === 0 ||
+              !previousMessage ||
+              previousMessage.senderId !== message.senderId ||
+              shouldShowDateHeader(message, previousMessage));
 
-          const isGrouped = nextMessage &&
-            nextMessage.senderId === message.senderId &&
-            !shouldShowDateHeader(nextMessage, message);
+          const isGrouped =
+            nextMessage && nextMessage.senderId === message.senderId && !shouldShowDateHeader(nextMessage, message);
 
           return (
             <div
@@ -152,7 +171,7 @@ function MessageList({ messages, currentUserId, onReply, onEdit, onDelete, onRea
                 top: 0,
                 left: 0,
                 width: '100%',
-                transform: `translateY(${virtualItem.start}px)`
+                transform: `translateY(${virtualItem.start}px)`,
               }}
               className={isGrouped ? 'mb-0.5' : 'mb-3'}
             >

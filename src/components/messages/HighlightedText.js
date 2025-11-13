@@ -14,8 +14,12 @@ function HighlightedText({ text, searchQuery }) {
     <span>
       {parts.map((part, index) => {
         const isMatch = part.toLowerCase() === searchQuery.toLowerCase();
+
         return isMatch ? (
-          <mark key={index} className="bg-yellow-200 text-gray-900 rounded px-0.5">
+          <mark
+            key={index}
+            className='bg-yellow-200 text-gray-900 rounded px-0.5'
+          >
             {part}
           </mark>
         ) : (
