@@ -1,10 +1,9 @@
 import { updateProfile } from 'firebase/auth';
 import { doc, updateDoc } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import PropTypes from 'prop-types';
 import React, { useState } from 'react';
 
-import { db, storage } from '../../firebase/config';
+import { db } from '../../firebase/config';
 
 /**
  * Profile settings tab
@@ -38,11 +37,23 @@ function ProfileSettings({ user }) {
 
       let photoURL = user.photoURL;
 
-      // Upload photo if changed
+      // Convert photo to base64 if changed
       if (photoFile) {
-        const storageRef = ref(storage, `profile-photos/${user.uid}`);
-        await uploadBytes(storageRef, photoFile);
-        photoURL = await getDownloadURL(storageRef);
+        // Check file size (limit to 500KB for base64)
+        if (photoFile.size > 500 * 1024) {
+          setMessage('Image too large. Please use an image smaller than 500KB');
+          setSaving(false);
+
+          return;
+        }
+
+        // Convert to base64
+        photoURL = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = e => resolve(e.target.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(photoFile);
+        });
       }
 
       // Update Firebase Auth profile
@@ -141,7 +152,7 @@ function ProfileSettings({ user }) {
         <div>
           <h4 className='font-medium text-gray-900'>Profile Photo</h4>
           <p className='text-sm text-gray-600'>Click the camera icon to upload a new photo</p>
-          <p className='text-xs text-gray-500 mt-1'>JPG, PNG or GIF. Max size 5MB</p>
+          <p className='text-xs text-gray-500 mt-1'>JPG, PNG or GIF. Max size 500KB</p>
         </div>
       </div>
 

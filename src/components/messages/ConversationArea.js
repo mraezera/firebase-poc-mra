@@ -10,11 +10,10 @@ import {
   serverTimestamp,
   updateDoc,
 } from 'firebase/firestore';
-import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import PropTypes from 'prop-types';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
-import { db, storage } from '../../firebase/config';
+import { db } from '../../firebase/config';
 import { presenceService } from '../../services/presenceService';
 import { generateLinkPreviews } from '../../utils/linkPreview';
 import OnlineStatusIndicator from '../common/OnlineStatusIndicator';
@@ -184,54 +183,15 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       return;
     }
 
-    const { plainText, richText, replyTo: replyToMessage, images = [], files = [] } = messageData;
+    const { plainText, richText, replyTo: replyToMessage } = messageData;
 
-    // Must have either text or attachments
-    if ((!plainText || !plainText.trim()) && images.length === 0 && files.length === 0) {
+    // Must have text
+    if (!plainText || !plainText.trim()) {
       return;
     }
 
     try {
       const messagesRef = collection(db, `conversations/${conversation.id}/messages`);
-      const attachments = [];
-
-      // Upload images to Firebase Storage
-      if (images.length > 0) {
-        for (const imageFile of images) {
-          const timestamp = Date.now();
-          const storageRef = ref(storage, `conversations/${conversation.id}/images/${timestamp}_${imageFile.name}`);
-
-          await uploadBytes(storageRef, imageFile);
-          const downloadURL = await getDownloadURL(storageRef);
-
-          attachments.push({
-            type: 'image',
-            url: downloadURL,
-            name: imageFile.name,
-            size: imageFile.size,
-            contentType: imageFile.type,
-          });
-        }
-      }
-
-      // Upload files to Firebase Storage
-      if (files.length > 0) {
-        for (const file of files) {
-          const timestamp = Date.now();
-          const storageRef = ref(storage, `conversations/${conversation.id}/files/${timestamp}_${file.name}`);
-
-          await uploadBytes(storageRef, file);
-          const downloadURL = await getDownloadURL(storageRef);
-
-          attachments.push({
-            type: 'file',
-            url: downloadURL,
-            name: file.name,
-            size: file.size,
-            contentType: file.type,
-          });
-        }
-      }
 
       // Generate link previews from text
       let linkPreviews = [];
@@ -244,15 +204,12 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         }
       }
 
-      // Determine message type
-      let messageType = 'text';
-      if (attachments.some(a => a.type === 'image')) {
-        messageType = attachments.length === 1 && !plainText ? 'image' : 'text';
-      }
+      // Message type is always text
+      const messageType = 'text';
 
       const newMessage = {
         text: richText || null,
-        plainText: plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : ''),
+        plainText: plainText?.trim() || '',
         type: messageType,
         senderId: user.uid,
         senderName: user.displayName,
@@ -270,7 +227,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
               senderName: replyToMessage.senderName,
             }
           : null,
-        attachments,
+        attachments: [],
         linkPreviews,
         // Message status tracking
         status: 'sent',
@@ -293,8 +250,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
         }
       });
 
-      const lastMessageText =
-        plainText?.trim() || (attachments.length > 0 ? `📎 ${attachments.length} attachment(s)` : '');
+      const lastMessageText = plainText?.trim() || '';
 
       await updateDoc(conversationRef, {
         lastMessage: {
