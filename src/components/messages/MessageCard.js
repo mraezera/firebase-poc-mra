@@ -107,7 +107,7 @@ function MessageCard({
   if (message.deletedAt) {
     return (
       <div className={clsx('flex', isOwnMessage ? 'justify-end' : 'justify-start')}>
-        <div className='max-w-md px-4 py-2 rounded-message bg-gray-100 border border-gray-200'>
+        <div className='max-w-md px-4 py-2 rounded-message bg-white border border-gray-300 shadow-sm'>
           <p className='text-sm text-gray-500 italic'>This message was deleted</p>
         </div>
       </div>
@@ -190,7 +190,7 @@ function MessageCard({
                       'px-4 py-2.5 rounded-message relative transition-all',
                       isOwnMessage
                         ? 'bg-primary-light text-gray-900 rounded-br-sm'
-                        : 'bg-gray-100 text-gray-900 rounded-bl-sm',
+                        : 'bg-white text-gray-900 rounded-bl-sm shadow-sm border border-gray-200',
                       isHighlighted && 'ring-2 ring-yellow-400 shadow-lg'
                     )}
                   >
