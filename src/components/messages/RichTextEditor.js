@@ -62,8 +62,9 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
 
   const handleContainerKeyDown = useCallback(
     e => {
-      // Enter or Space should focus the editor
-      if (e.key === 'Enter' || e.key === ' ') {
+      // Only handle Enter or Space if the container itself is focused (not the editor)
+      // This prevents interfering with typing in the editor
+      if ((e.key === 'Enter' || e.key === ' ') && e.target !== editableRef.current) {
         e.preventDefault();
         handleContainerClick(e);
       }
