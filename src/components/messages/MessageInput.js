@@ -1,8 +1,11 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
 import React, { useEffect, useRef, useState } from 'react';
+import { Transforms } from 'slate';
+import { ReactEditor } from 'slate-react';
 
 import { presenceService } from '../../services/presenceService';
+import EmojiPicker from '../common/EmojiPicker';
 import RichTextEditor, { createEmptySlateValue, isSlateEmpty, slateToJSON, slateToPlainText } from './RichTextEditor';
 
 function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId }) {
@@ -11,11 +14,14 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
   const [selectedImages, setSelectedImages] = useState([]);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const typingTimeoutRef = useRef(null);
   const isTypingRef = useRef(false);
   const fileInputRef = useRef(null);
   const imageInputRef = useRef(null);
   const dropZoneRef = useRef(null);
+  const emojiPickerRef = useRef(null);
+  const editorRef = useRef(null);
 
   // Handle typing indicators
   const handleEditorChange = value => {
@@ -54,6 +60,42 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
       }
     };
   }, [conversationId]);
+
+  // Handle clicks outside emoji picker to close it
+  useEffect(() => {
+    const handleClickOutside = event => {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(event.target)) {
+        setIsEmojiPickerOpen(false);
+      }
+    };
+
+    if (isEmojiPickerOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [isEmojiPickerOpen]);
+
+  const handleEmojiSelect = emoji => {
+    if (editorRef.current) {
+      const editor = editorRef.current.getEditor();
+
+      try {
+        // Focus the editor first
+        ReactEditor.focus(editor);
+
+        // Insert the emoji at the current cursor position
+        Transforms.insertText(editor, emoji);
+      } catch (error) {
+        console.error('Error inserting emoji:', error);
+      }
+    }
+
+    // Close the emoji picker
+    setIsEmojiPickerOpen(false);
+  };
 
   const handleImageSelect = e => {
     const files = Array.from(e.target.files);
@@ -338,7 +380,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
 
       <form
         onSubmit={handleSubmit}
-        className='flex items-end space-x-3'
+        className='flex items-center space-x-3'
       >
         {/* Attachment Buttons */}
         <div className='flex space-x-2'>
@@ -346,7 +388,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
           <button
             type='button'
             onClick={() => imageInputRef.current?.click()}
-            className='p-3 hover:bg-gray-100 rounded-full transition-colors'
+            className='p-2.5 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors flex items-center justify-center h-[44px] w-[44px]'
             title='Attach image'
           >
             <svg
@@ -368,7 +410,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
           <button
             type='button'
             onClick={() => fileInputRef.current?.click()}
-            className='p-3 hover:bg-gray-100 rounded-full transition-colors'
+            className='p-2.5 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors flex items-center justify-center h-[44px] w-[44px]'
             title='Attach file'
           >
             <svg
@@ -407,6 +449,7 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
         {/* Rich Text Editor */}
         <div className='flex-1'>
           <RichTextEditor
+            ref={editorRef}
             value={editorValue}
             onChange={handleEditorChange}
             onSubmit={handleSubmit}
@@ -415,12 +458,46 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
           />
         </div>
 
+        {/* Emoji Picker Button */}
+        <div className='relative'>
+          <button
+            type='button'
+            onClick={() => setIsEmojiPickerOpen(!isEmojiPickerOpen)}
+            className='p-2.5 bg-gray-200 hover:bg-gray-300 rounded-xl transition-colors flex items-center justify-center h-[44px] w-[44px]'
+            title='Add emoji'
+          >
+            <svg
+              className='w-6 h-6 text-gray-600'
+              fill='none'
+              stroke='currentColor'
+              viewBox='0 0 24 24'
+            >
+              <path
+                strokeLinecap='round'
+                strokeLinejoin='round'
+                strokeWidth={2}
+                d='M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'
+              />
+            </svg>
+          </button>
+
+          {/* Emoji Picker Popup */}
+          {isEmojiPickerOpen && (
+            <div
+              ref={emojiPickerRef}
+              className='absolute bottom-full right-0 mb-2 z-50'
+            >
+              <EmojiPicker onEmojiSelect={handleEmojiSelect} />
+            </div>
+          )}
+        </div>
+
         {/* Send Button */}
         <button
           type='submit'
           disabled={isEmpty}
           className={clsx(
-            'px-6 py-3 rounded-xl font-medium transition-all flex items-center space-x-2',
+            'px-6 py-2.5 rounded-xl font-medium transition-all flex items-center justify-center space-x-2 h-[44px]',
             !isEmpty
               ? 'bg-primary hover:bg-primary-dark text-white cursor-pointer'
               : 'bg-gray-200 text-gray-400 cursor-not-allowed'

@@ -1,41 +1,41 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { createEditor, Editor } from 'slate';
 import { Editable, ReactEditor, Slate, withReact } from 'slate-react';
 
-const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }) => {
-  const editor = useMemo(() => withReact(createEditor()), []);
-  const [isFocused, setIsFocused] = useState(false);
-  const editableRef = useRef(null);
+const RichTextEditor = React.forwardRef(
+  ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }, ref) => {
+    const editor = useMemo(() => withReact(createEditor()), []);
+    const [isFocused, setIsFocused] = useState(false);
+    const editableRef = useRef(null);
 
-  // Ensure value is never undefined
-  const initialValue = value || createEmptySlateValue();
+    // Expose editor instance to parent
+    useImperativeHandle(ref, () => ({
+      getEditor: () => editor,
+    }));
 
-  // Size configurations based on variant
-  const sizes = {
-    default: {
-      containerMinHeight: '48px',
-      editableMinHeight: '20px',
-      editableMaxHeight: '100px',
-    },
-    large: {
-      containerMinHeight: '48px',
-      editableMinHeight: '20px',
-      editableMaxHeight: '100px',
-    },
-  };
+    // Ensure value is never undefined
+    const initialValue = value || createEmptySlateValue();
 
-  const sizeConfig = sizes[variant] || sizes.default;
+    // Size configurations based on variant
+    const sizes = {
+      default: {
+        containerMinHeight: '44px',
+        editableMinHeight: '20px',
+        editableMaxHeight: '100px',
+      },
+      large: {
+        containerMinHeight: '44px',
+        editableMinHeight: '20px',
+        editableMaxHeight: '100px',
+      },
+    };
 
-  const renderLeaf = useCallback(props => <Leaf {...props} />, []);
-  const renderElement = useCallback(props => <Element {...props} />, []);
+    const sizeConfig = sizes[variant] || sizes.default;
 
-  // Handle clicking anywhere in the container to focus the editor
-  const handleContainerClick = useCallback(
-    e => {
-      e.preventDefault();
-      e.stopPropagation();
+    const renderLeaf = useCallback(props => <Leaf {...props} />, []);
+    const renderElement = useCallback(props => <Element {...props} />, []);
 
       // Use requestAnimationFrame for better timing
       requestAnimationFrame(() => {
@@ -48,17 +48,24 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
           console.error('Failed to focus Slate editor:', err);
           // Fallback to direct DOM focus
           try {
-            if (editableRef.current) {
-              editableRef.current.focus();
+            ReactEditor.focus(editor);
+            // Move cursor to the end of the content
+            const end = Editor.end(editor, []);
+            editor.selection = { anchor: end, focus: end };
+          } catch (err) {
+            // Fallback to direct DOM focus
+            try {
+              if (editableRef.current) {
+                editableRef.current.focus();
+              }
+            } catch (e) {
+              console.error('Failed to focus editor:', e);
             }
-          } catch (e) {
-            console.error('Failed to focus editor:', e);
           }
-        }
-      });
-    },
-    [editor]
-  );
+        });
+      },
+      [editor]
+    );
 
   const handleContainerKeyDown = useCallback(
     e => {
@@ -78,25 +85,25 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
       event.preventDefault();
       onSubmit();
 
-      return;
-    }
+        return;
+      }
 
-    // Bold
-    if (event.ctrlKey && event.key === 'b') {
-      event.preventDefault();
-      toggleMark(editor, 'bold');
+      // Bold
+      if (event.ctrlKey && event.key === 'b') {
+        event.preventDefault();
+        toggleMark(editor, 'bold');
 
-      return;
-    }
+        return;
+      }
 
-    // Italic
-    if (event.ctrlKey && event.key === 'i') {
-      event.preventDefault();
-      toggleMark(editor, 'italic');
+      // Italic
+      if (event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        toggleMark(editor, 'italic');
 
-      return;
-    }
-  };
+        return;
+      }
+    };
 
   return (
     <div
@@ -118,25 +125,37 @@ const RichTextEditor = ({ value, onChange, onSubmit, placeholder, editorKey, var
         initialValue={initialValue}
         onChange={onChange}
       >
-        <Editable
-          ref={editableRef}
-          renderLeaf={renderLeaf}
-          renderElement={renderElement}
-          placeholder={placeholder}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          style={{
-            outline: 'none',
-            minHeight: sizeConfig.editableMinHeight,
-            maxHeight: sizeConfig.editableMaxHeight,
-            overflowY: 'auto',
-          }}
-        />
-      </Slate>
-    </div>
-  );
-};
+        <Slate
+          key={editorKey}
+          editor={editor}
+          initialValue={initialValue}
+          onChange={onChange}
+        >
+          <Editable
+            ref={editableRef}
+            renderLeaf={renderLeaf}
+            renderElement={renderElement}
+            placeholder={placeholder}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            style={{
+              outline: 'none',
+              minHeight: sizeConfig.editableMinHeight,
+              maxHeight: sizeConfig.editableMaxHeight,
+              overflowY: 'auto',
+              paddingTop: '10px',
+              paddingBottom: '10px',
+              flex: 1,
+            }}
+          />
+        </Slate>
+      </div>
+    );
+  }
+);
+
+RichTextEditor.displayName = 'RichTextEditor';
 
 const toggleMark = (editor, format) => {
   const isActive = isMarkActive(editor, format);
