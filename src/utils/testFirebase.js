@@ -15,8 +15,9 @@ export const testFirebasePermissions = async user => {
     await setDoc(
       userRef,
       {
-        displayName: user.displayName,
-        email: user.email,
+        displayName: user.displayName || 'User',
+        email: user.email?.toLowerCase() || '',
+        photoURL: user.photoURL || '',
         testField: 'test',
         timestamp: new Date().toISOString(),
       },
