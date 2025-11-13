@@ -39,20 +39,48 @@ function ProfileSettings({ user }) {
 
       // Convert photo to base64 if changed
       if (photoFile) {
-        // Check file size (limit to 500KB for base64)
-        if (photoFile.size > 500 * 1024) {
-          setMessage('Image too large. Please use an image smaller than 500KB');
+        // Check file size (limit to 100KB for base64)
+        if (photoFile.size > 100 * 1024) {
+          setMessage('Image too large. Please use an image smaller than 100KB or compress it first');
           setSaving(false);
 
           return;
         }
 
-        // Convert to base64
+        // Resize and compress image before converting to base64
         photoURL = await new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.onload = e => resolve(e.target.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(photoFile);
+          const img = new Image();
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+
+          img.onload = () => {
+            // Resize to max 200x200
+            const maxSize = 200;
+            let width = img.width;
+            let height = img.height;
+
+            if (width > height) {
+              if (width > maxSize) {
+                height *= maxSize / width;
+                width = maxSize;
+              }
+            } else {
+              if (height > maxSize) {
+                width *= maxSize / height;
+                height = maxSize;
+              }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Convert to base64 with compression (0.7 quality)
+            resolve(canvas.toDataURL('image/jpeg', 0.7));
+          };
+
+          img.onerror = reject;
+          img.src = URL.createObjectURL(photoFile);
         });
       }
 
@@ -152,7 +180,7 @@ function ProfileSettings({ user }) {
         <div>
           <h4 className='font-medium text-gray-900'>Profile Photo</h4>
           <p className='text-sm text-gray-600'>Click the camera icon to upload a new photo</p>
-          <p className='text-xs text-gray-500 mt-1'>JPG, PNG or GIF. Max size 500KB</p>
+          <p className='text-xs text-gray-500 mt-1'>JPG, PNG or GIF. Max size 100KB (will be resized to 200x200)</p>
         </div>
       </div>
 
