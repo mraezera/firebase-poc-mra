@@ -6,16 +6,33 @@ import Layout from './components/layout/Layout';
 import SettingsModal from './components/settings/SettingsModal';
 import { auth } from './firebase/config';
 import { presenceService } from './services/presenceService';
+import { cleanupDatabase } from './utils/cleanupDatabase';
 import { testFirebasePermissions } from './utils/testFirebase';
 
 function App() {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const [showSettings, setShowSettings] = useState(false);
+  const [cleanupDone, setCleanupDone] = useState(localStorage.getItem('firestoreCleanupDone') === 'true');
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async user => {
       if (user) {
+        // Run cleanup once if not done yet
+        if (!cleanupDone) {
+          const result = await cleanupDatabase();
+          if (result.success) {
+            localStorage.setItem('firestoreCleanupDone', 'true');
+            setCleanupDone(true);
+            alert(
+              `Database cleanup complete!\n\nCleaned ${result.cleanedCount} items.\n\nThe page will now reload to clear the cache.`
+            );
+            window.location.reload();
+
+            return;
+          }
+        }
+
         setUser(user);
 
         // Test Firebase permissions
@@ -54,7 +71,7 @@ function App() {
       // Clean up presence on unmount
       presenceService.cleanup();
     };
-  }, [initializing]);
+  }, [initializing, cleanupDone]);
 
   const signOut = async () => {
     try {
