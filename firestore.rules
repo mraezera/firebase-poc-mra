@@ -42,6 +42,12 @@ service cloud.firestore {
       allow write: if isOwner(userId);
     }
 
+    // User status collection (for online/offline tracking)
+    match /userStatus/{userId} {
+      allow read: if isSignedIn();
+      allow write: if isOwner(userId);
+    }
+
     // Typing indicators
     match /typing/{conversationId} {
       allow read: if isSignedIn();

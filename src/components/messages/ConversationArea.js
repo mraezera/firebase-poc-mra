@@ -105,7 +105,7 @@ function ConversationArea({ user, conversation, onToggleRightPanel }) {
       unsubscribe();
       unsubscribeTyping();
     };
-  }, [conversation, user.uid]);
+  }, [conversation?.id, user.uid]);
 
   // Separate effect for marking messages as delivered/read
   // Only runs when message IDs change, not when message content changes
