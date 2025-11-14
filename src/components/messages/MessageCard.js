@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 import PropTypes from 'prop-types';
 import React, { useEffect, useState } from 'react';
 
@@ -41,12 +41,21 @@ function MessageCard({
       setEditValue(jsonToSlate(message.text));
     }
   }, [isEditing, message.text]);
+
   const formatTimestamp = timestamp => {
     if (!timestamp) {
       return '';
     }
     try {
-      return formatDistanceToNow(timestamp.toDate(), { addSuffix: true });
+      const date = timestamp.toDate();
+      const now = new Date();
+      const isToday = date.toDateString() === now.toDateString();
+
+      if (isToday) {
+        return format(date, 'h:mm a');
+      } else {
+        return format(date, 'MMM d, h:mm a');
+      }
     } catch (error) {
       return '';
     }
@@ -325,6 +334,21 @@ function MessageCard({
                       onAddReaction={handleAddReaction}
                       onRemoveReaction={handleRemoveReaction}
                     />
+
+                    {/* Timestamp and Status - inside bubble at bottom right */}
+                    <div className='flex items-center justify-end space-x-1 mt-1'>
+                      {message.editedAt && <span className='text-xs text-gray-500 italic'>Edited</span>}
+                      <span className='text-xs text-gray-500'>{formatTimestamp(message.createdAt)}</span>
+                      {/* Show status indicator for own messages */}
+                      {isOwnMessage && (
+                        <MessageStatusIndicator
+                          status={message.status}
+                          readBy={message.readBy}
+                          deliveredTo={message.deliveredTo}
+                          currentUserId={currentUserId}
+                        />
+                      )}
+                    </div>
                   </div>
 
                   {/* Action Buttons (shown on hover) */}
@@ -503,21 +527,6 @@ function MessageCard({
                     </div>
                   )}
                 </>
-              )}
-            </div>
-
-            {/* Timestamp, Status, and Edited Label */}
-            <div className='flex items-center space-x-2 mt-1 px-2'>
-              <span className='text-xs text-gray-500'>{formatTimestamp(message.createdAt)}</span>
-              {message.editedAt && <span className='text-xs text-gray-500 italic'>Edited</span>}
-              {/* Show status indicator for own messages */}
-              {isOwnMessage && (
-                <MessageStatusIndicator
-                  status={message.status}
-                  readBy={message.readBy}
-                  deliveredTo={message.deliveredTo}
-                  currentUserId={currentUserId}
-                />
               )}
             </div>
           </div>

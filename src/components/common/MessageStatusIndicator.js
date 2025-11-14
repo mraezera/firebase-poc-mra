@@ -28,7 +28,7 @@ function MessageStatusIndicator({ status, readBy = {}, deliveredTo = {}, current
     // Read - double checkmark in blue
     icon = (
       <svg
-        className='w-4 h-4'
+        className='w-3.5 h-3.5'
         fill='currentColor'
         viewBox='0 0 24 24'
       >
@@ -41,7 +41,7 @@ function MessageStatusIndicator({ status, readBy = {}, deliveredTo = {}, current
     // Delivered - double checkmark in gray
     icon = (
       <svg
-        className='w-4 h-4'
+        className='w-3.5 h-3.5'
         fill='currentColor'
         viewBox='0 0 24 24'
       >
@@ -60,7 +60,7 @@ function MessageStatusIndicator({ status, readBy = {}, deliveredTo = {}, current
     // Sent - single checkmark in gray
     icon = (
       <svg
-        className='w-4 h-4'
+        className='w-3.5 h-3.5'
         fill='currentColor'
         viewBox='0 0 24 24'
       >
@@ -72,7 +72,7 @@ function MessageStatusIndicator({ status, readBy = {}, deliveredTo = {}, current
     // Failed - exclamation mark in red
     icon = (
       <svg
-        className='w-4 h-4'
+        className='w-3.5 h-3.5'
         fill='currentColor'
         viewBox='0 0 24 24'
       >
@@ -84,7 +84,7 @@ function MessageStatusIndicator({ status, readBy = {}, deliveredTo = {}, current
     // Sending - clock icon
     icon = (
       <svg
-        className='w-4 h-4 animate-spin'
+        className='w-3.5 h-3.5 animate-spin'
         fill='currentColor'
         viewBox='0 0 24 24'
       >
