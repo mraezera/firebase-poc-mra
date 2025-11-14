@@ -164,6 +164,17 @@ function MessageList({
           const isGrouped =
             nextMessage && nextMessage.senderId === message.senderId && !shouldShowDateHeader(nextMessage, message);
 
+          // Check if message has reactions to add extra spacing
+          const hasReactions = message.reactions && Object.keys(message.reactions).length > 0;
+
+          // Determine margin based on grouping and reactions
+          let marginClass = 'mb-6'; // default spacing
+          if (isGrouped) {
+            marginClass = hasReactions ? 'mb-4' : 'mb-2';
+          } else if (hasReactions) {
+            marginClass = 'mb-8';
+          }
+
           return (
             <div
               key={virtualItem.key}
@@ -174,7 +185,7 @@ function MessageList({
                 width: '100%',
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-              className={isGrouped ? 'mb-2' : 'mb-6'}
+              className={marginClass}
             >
               <MessageCard
                 message={message}
