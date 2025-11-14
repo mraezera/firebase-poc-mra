@@ -26,7 +26,9 @@ function AppearanceSettings() {
 
   useEffect(() => {
     // Apply accent color
-    document.documentElement.style.setProperty('--accent-color', getAccentColorValue(accentColor));
+    const colorValues = getAccentColorValues(accentColor);
+    document.documentElement.style.setProperty('--accent-color', colorValues.default);
+    document.documentElement.style.setProperty('--accent-color-dark', colorValues.dark);
     localStorage.setItem('accentColor', accentColor);
   }, [accentColor]);
 
@@ -41,14 +43,14 @@ function AppearanceSettings() {
     localStorage.setItem('fontSize', fontSize);
   }, [fontSize]);
 
-  const getAccentColorValue = color => {
+  const getAccentColorValues = color => {
     const colors = {
-      blue: '#3b82f6',
-      purple: '#8b5cf6',
-      green: '#10b981',
-      red: '#ef4444',
-      orange: '#f97316',
-      pink: '#ec4899',
+      blue: { default: '#3b82f6', dark: '#2563eb' },
+      purple: { default: '#8b5cf6', dark: '#7c3aed' },
+      green: { default: '#10b981', dark: '#059669' },
+      red: { default: '#ef4444', dark: '#dc2626' },
+      orange: { default: '#f97316', dark: '#ea580c' },
+      pink: { default: '#ec4899', dark: '#db2777' },
     };
 
     return colors[color] || colors.blue;
