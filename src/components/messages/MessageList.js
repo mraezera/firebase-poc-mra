@@ -169,10 +169,13 @@ function MessageList({
           const isForwarded = message.isForwarded;
 
           // Determine margin based on grouping, reactions, and forwarded status
-          let marginClass = 'mb-6'; // default spacing
+          // Ensure there's always adequate spacing to prevent overlap
+          let marginClass = 'mb-6'; // default spacing for different senders
           if (isGrouped) {
-            marginClass = hasReactions || isForwarded ? 'mb-4' : 'mb-2';
+            // Same sender back-to-back messages need spacing too
+            marginClass = hasReactions || isForwarded ? 'mb-6' : 'mb-4';
           } else if (hasReactions || isForwarded) {
+            // Different sender with reactions/forwarded needs more space
             marginClass = 'mb-8';
           }
 
