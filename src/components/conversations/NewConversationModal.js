@@ -1,6 +1,6 @@
-import { addDoc, collection, getDocs, query, serverTimestamp, where } from 'firebase/firestore';
+import { addDoc, collection, getDocs, serverTimestamp } from 'firebase/firestore';
 import PropTypes from 'prop-types';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { db } from '../../firebase/config';
 
@@ -9,18 +9,18 @@ function NewConversationModal({ isOpen, onClose, user, conversations, onConversa
   const [conversationType, setConversationType] = useState('direct'); // 'direct' or 'group'
   const [selectedUsers, setSelectedUsers] = useState([]);
   const [groupName, setGroupName] = useState('');
-  const [searchEmail, setSearchEmail] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [searching, setSearching] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [searchResult, setSearchResult] = useState(null);
+  const [userList, setUserList] = useState([]);
 
   const resetModal = () => {
     setStep('type');
     setConversationType('direct');
     setSelectedUsers([]);
     setGroupName('');
-    setSearchEmail('');
-    setSearchResult(null);
+    setSearchQuery('');
+    setUserList([]);
   };
 
   const handleClose = () => {
@@ -28,60 +28,64 @@ function NewConversationModal({ isOpen, onClose, user, conversations, onConversa
     onClose();
   };
 
-  const handleSearchUser = async () => {
-    if (!searchEmail.trim()) {
+  // Live search effect
+  useEffect(() => {
+    const searchUsers = async () => {
+      if (!searchQuery.trim()) {
+        setUserList([]);
+
+        return;
+      }
+
+      setSearching(true);
+
+      try {
+        const usersRef = collection(db, 'users');
+        const querySnapshot = await getDocs(usersRef);
+
+        const searchLower = searchQuery.trim().toLowerCase();
+        const users = [];
+
+        querySnapshot.forEach(doc => {
+          const userData = { id: doc.id, ...doc.data() };
+
+          // Filter by email or display name
+          const matchesSearch =
+            userData.email?.toLowerCase().includes(searchLower) ||
+            userData.displayName?.toLowerCase().includes(searchLower);
+
+          // Exclude current user and already selected users
+          const isCurrentUser = userData.id === user.uid;
+          const isAlreadySelected = selectedUsers.find(u => u.id === userData.id);
+
+          if (matchesSearch && !isCurrentUser && !isAlreadySelected) {
+            users.push(userData);
+          }
+        });
+
+        setUserList(users);
+      } catch (error) {
+        console.error('Error searching users:', error);
+      } finally {
+        setSearching(false);
+      }
+    };
+
+    // Debounce search
+    const timeoutId = setTimeout(searchUsers, 300);
+
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery, user.uid, selectedUsers]);
+
+  const handleAddUser = userData => {
+    // For direct messages, only allow one user
+    if (conversationType === 'direct' && selectedUsers.length > 0) {
       return;
     }
 
-    setSearching(true);
-    setSearchResult(null);
-
-    try {
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where('email', '==', searchEmail.trim().toLowerCase()));
-      const querySnapshot = await getDocs(q);
-
-      if (querySnapshot.empty) {
-        alert('User not found with that email address. They may need to sign in first.');
-        setSearching(false);
-
-        return;
-      }
-
-      const foundUser = querySnapshot.docs[0];
-      const userData = { id: foundUser.id, ...foundUser.data() };
-
-      // Check if user is trying to add themselves
-      if (userData.id === user.uid) {
-        alert('You cannot add yourself to the conversation.');
-        setSearching(false);
-
-        return;
-      }
-
-      // Check if user is already selected
-      if (selectedUsers.find(u => u.id === userData.id)) {
-        alert('This user is already added.');
-        setSearching(false);
-
-        return;
-      }
-
-      setSearchResult(userData);
-    } catch (error) {
-      console.error('Error searching user:', error);
-      alert('Error searching for user: ' + error.message);
-    } finally {
-      setSearching(false);
-    }
-  };
-
-  const handleAddUser = () => {
-    if (searchResult) {
-      setSelectedUsers([...selectedUsers, searchResult]);
-      setSearchEmail('');
-      setSearchResult(null);
-    }
+    setSelectedUsers([...selectedUsers, userData]);
+    setSearchQuery('');
+    setUserList([]);
   };
 
   const handleRemoveUser = userId => {
@@ -280,59 +284,66 @@ function NewConversationModal({ isOpen, onClose, user, conversations, onConversa
                 </div>
               )}
 
-              {/* Add Users */}
+              {/* Search Users */}
               <div>
                 <label className='block text-sm font-medium text-gray-700 mb-1'>
-                  Add {conversationType === 'direct' ? 'User' : 'Users'} (by email) *
+                  Search {conversationType === 'direct' ? 'User' : 'Users'} *
                 </label>
-                <div className='flex space-x-2'>
-                  <input
-                    type='email'
-                    value={searchEmail}
-                    onChange={e => setSearchEmail(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSearchUser()}
-                    placeholder='user@example.com'
-                    className='flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent'
-                  />
-                  <button
-                    onClick={handleSearchUser}
-                    disabled={searching || !searchEmail.trim()}
-                    className='px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
-                  >
-                    {searching ? 'Searching...' : 'Search'}
-                  </button>
-                </div>
+                <input
+                  type='text'
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  placeholder='Search by name or email...'
+                  disabled={conversationType === 'direct' && selectedUsers.length > 0}
+                  className='w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed'
+                />
+                {searching && searchQuery && <p className='text-xs text-gray-500 mt-1'>Searching...</p>}
               </div>
 
-              {/* Search Result */}
-              {searchResult && (
-                <div className='p-3 bg-gray-50 rounded-lg border border-gray-200'>
-                  <div className='flex items-center justify-between'>
-                    <div className='flex items-center space-x-3'>
-                      {searchResult.photoURL ? (
-                        <img
-                          src={searchResult.photoURL}
-                          alt={searchResult.displayName}
-                          className='w-10 h-10 rounded-full'
-                        />
-                      ) : (
-                        <div className='w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-semibold'>
-                          {searchResult.displayName?.[0]?.toUpperCase() || '?'}
+              {/* User List */}
+              {userList.length > 0 && (
+                <div className='max-h-60 overflow-y-auto border border-gray-200 rounded-lg'>
+                  {userList.map(foundUser => (
+                    <div
+                      key={foundUser.id}
+                      className='p-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0'
+                    >
+                      <div className='flex items-center justify-between'>
+                        <div className='flex items-center space-x-3'>
+                          {foundUser.photoURL ? (
+                            <img
+                              src={foundUser.photoURL}
+                              alt={foundUser.displayName}
+                              className='w-10 h-10 rounded-full'
+                            />
+                          ) : (
+                            <div className='w-10 h-10 rounded-full bg-gray-400 flex items-center justify-center text-white font-semibold'>
+                              {foundUser.displayName?.[0]?.toUpperCase() || '?'}
+                            </div>
+                          )}
+                          <div>
+                            <p className='font-medium text-gray-900'>{foundUser.displayName || 'User'}</p>
+                            <p className='text-sm text-gray-500'>{foundUser.email}</p>
+                          </div>
                         </div>
-                      )}
-                      <div>
-                        <p className='font-medium text-gray-900'>{searchResult.displayName || 'User'}</p>
-                        <p className='text-sm text-gray-500'>{searchResult.email}</p>
+                        <button
+                          onClick={() => handleAddUser(foundUser)}
+                          disabled={conversationType === 'direct' && selectedUsers.length > 0}
+                          className='px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary-dark transition-colors disabled:opacity-50 disabled:cursor-not-allowed'
+                        >
+                          Add
+                        </button>
                       </div>
                     </div>
-                    <button
-                      onClick={handleAddUser}
-                      className='px-3 py-1 bg-primary text-white text-sm rounded hover:bg-primary-dark transition-colors'
-                    >
-                      Add
-                    </button>
-                  </div>
+                  ))}
                 </div>
+              )}
+
+              {/* No results message */}
+              {!searching && searchQuery && userList.length === 0 && (
+                <p className='text-sm text-gray-500 text-center py-2'>
+                  No users found matching &quot;{searchQuery}&quot;
+                </p>
               )}
 
               {/* Selected Users */}
