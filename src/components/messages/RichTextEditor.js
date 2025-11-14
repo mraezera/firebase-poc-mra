@@ -1,169 +1,127 @@
 import clsx from 'clsx';
 import PropTypes from 'prop-types';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { createEditor, Editor } from 'slate';
 import { Editable, ReactEditor, Slate, withReact } from 'slate-react';
 
-const RichTextEditor = ({
-  value,
-  onChange,
-  onSubmit,
-  placeholder,
-  editorKey,
-  variant = 'default',
-  autoFocus = false,
-}) => {
-  const editor = useMemo(() => withReact(createEditor()), []);
-  const [isFocused, setIsFocused] = useState(false);
-  const editableRef = useRef(null);
+const RichTextEditor = React.forwardRef(
+  ({ value, onChange, onSubmit, placeholder, editorKey, variant = 'default' }, ref) => {
+    const editor = useMemo(() => withReact(createEditor()), []);
+    const [isFocused, setIsFocused] = useState(false);
+    const editableRef = useRef(null);
 
-  // Auto-focus when component mounts or when autoFocus changes
-  useEffect(() => {
-    if (autoFocus) {
-      // Use a small delay to ensure the editor is fully rendered
-      const timer = setTimeout(() => {
-        try {
-          ReactEditor.focus(editor);
-          // Move cursor to the end of the content
-          const end = Editor.end(editor, []);
-          editor.selection = { anchor: end, focus: end };
-        } catch (err) {
-          console.error('Failed to auto-focus editor:', err);
-        }
-      }, 0);
+    // Expose editor instance to parent
+    useImperativeHandle(ref, () => ({
+      getEditor: () => editor,
+    }));
 
-      return () => clearTimeout(timer);
-    }
-  }, [autoFocus, editor]);
+    // Ensure value is never undefined
+    const initialValue = value || createEmptySlateValue();
 
-  // Ensure value is never undefined
-  const initialValue = value || createEmptySlateValue();
+    // Size configurations based on variant
+    const sizes = {
+      default: {
+        containerMinHeight: '40px',
+        editableMinHeight: '20px',
+        editableMaxHeight: '100px',
+      },
+      large: {
+        containerMinHeight: '44px',
+        editableMinHeight: '20px',
+        editableMaxHeight: '100px',
+      },
+    };
 
-  // Size configurations based on variant
-  const sizes = {
-    default: {
-      containerMinHeight: '48px',
-      editableMinHeight: '20px',
-      editableMaxHeight: '100px',
-    },
-    large: {
-      containerMinHeight: '48px',
-      editableMinHeight: '20px',
-      editableMaxHeight: '100px',
-    },
-  };
+    const sizeConfig = sizes[variant] || sizes.default;
 
-  const sizeConfig = sizes[variant] || sizes.default;
+    const renderLeaf = useCallback(props => <Leaf {...props} />, []);
+    const renderElement = useCallback(props => <Element {...props} />, []);
 
-  const renderLeaf = useCallback(props => <Leaf {...props} />, []);
-  const renderElement = useCallback(props => <Element {...props} />, []);
-
-  // Handle clicking anywhere in the container to focus the editor
-  const handleContainerClick = useCallback(
-    e => {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        try {
-          ReactEditor.focus(editor);
-          // Move cursor to the end of the content
-          const end = Editor.end(editor, []);
-          editor.selection = { anchor: end, focus: end };
-        } catch (err) {
-          console.error('Failed to focus Slate editor:', err);
-          // Fallback to direct DOM focus
-          try {
-            if (editableRef.current) {
-              editableRef.current.focus();
-            }
-          } catch (e) {
-            console.error('Failed to focus editor:', e);
-          }
-        }
-      });
-    },
-    [editor]
-  );
-
-  const handleContainerKeyDown = useCallback(
-    e => {
-      // Only handle Enter or Space if the container itself is focused (not the editor)
-      // This prevents interfering with typing in the editor
-      if ((e.key === 'Enter' || e.key === ' ') && e.target !== editableRef.current) {
+    const handleContainerClick = useCallback(
+      e => {
         e.preventDefault();
-        handleContainerClick(e);
+        // Use requestAnimationFrame for better timing
+        requestAnimationFrame(() => {
+          try {
+            ReactEditor.focus(editor);
+            // Move cursor to the end of the content
+            const end = Editor.end(editor, []);
+            editor.selection = { anchor: end, focus: end };
+          } catch (err) {
+            console.error('Failed to focus Slate editor:', err);
+            // Fallback to direct DOM focus
+            try {
+              if (editableRef.current) {
+                editableRef.current.focus();
+              }
+            } catch (e) {
+              console.error('Failed to focus editor:', e);
+            }
+          }
+        });
+      },
+      [editor]
+    );
+
+    const handleKeyDown = event => {
+      // Submit on Enter (without Shift)
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        onSubmit();
       }
-    },
-    [handleContainerClick]
-  );
+      // Bold
+      else if (event.ctrlKey && event.key === 'b') {
+        event.preventDefault();
+        toggleMark(editor, 'bold');
+      }
+      // Italic
+      else if (event.ctrlKey && event.key === 'i') {
+        event.preventDefault();
+        toggleMark(editor, 'italic');
+      }
+    };
 
-  const handleKeyDown = event => {
-    // Submit on Enter (without Shift)
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      onSubmit();
-
-      return;
-    }
-
-    // Bold
-    if (event.ctrlKey && event.key === 'b') {
-      event.preventDefault();
-      toggleMark(editor, 'bold');
-
-      return;
-    }
-
-    // Italic
-    if (event.ctrlKey && event.key === 'i') {
-      event.preventDefault();
-      toggleMark(editor, 'italic');
-
-      return;
-    }
-  };
-
-  return (
-    <div
-      role='textbox'
-      tabIndex={0}
-      onMouseDown={handleContainerClick}
-      onKeyDown={handleContainerKeyDown}
-      aria-label={placeholder || 'Text editor'}
-      aria-multiline='true'
-      className={clsx(
-        'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
-        isFocused && 'ring-2 ring-primary border-transparent'
-      )}
-      style={{ minHeight: sizeConfig.containerMinHeight }}
-    >
-      <Slate
-        key={editorKey}
-        editor={editor}
-        initialValue={initialValue}
-        onChange={onChange}
+    return (
+      <div
+        onMouseDown={handleContainerClick}
+        className={clsx(
+          'w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
+          isFocused && 'ring-2 ring-primary border-transparent'
+        )}
+        style={{ minHeight: sizeConfig.containerMinHeight }}
       >
-        <Editable
-          ref={editableRef}
-          renderLeaf={renderLeaf}
-          renderElement={renderElement}
-          placeholder={placeholder}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsFocused(true)}
-          onBlur={() => setIsFocused(false)}
-          style={{
-            outline: 'none',
-            minHeight: sizeConfig.editableMinHeight,
-            maxHeight: sizeConfig.editableMaxHeight,
-            overflowY: 'auto',
-          }}
-        />
-      </Slate>
-    </div>
-  );
-};
+        <Slate
+          key={editorKey}
+          editor={editor}
+          initialValue={initialValue}
+          onChange={onChange}
+        >
+          <Editable
+            ref={editableRef}
+            renderLeaf={renderLeaf}
+            renderElement={renderElement}
+            placeholder={placeholder}
+            onKeyDown={handleKeyDown}
+            onFocus={() => setIsFocused(true)}
+            onBlur={() => setIsFocused(false)}
+            autoFocus={true}
+            style={{
+              outline: 'none',
+              minHeight: sizeConfig.editableMinHeight,
+              maxHeight: sizeConfig.editableMaxHeight,
+              overflowY: 'auto',
+              paddingTop: '2px',
+              paddingBottom: '2px',
+              flex: 1,
+            }}
+          />
+        </Slate>
+      </div>
+    );
+  }
+);
+
+RichTextEditor.displayName = 'RichTextEditor';
 
 const toggleMark = (editor, format) => {
   const isActive = isMarkActive(editor, format);
@@ -265,6 +223,8 @@ export const jsonToSlate = jsonString => {
 
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : createEmptySlateValue();
   } catch (e) {
+    console.error('Failed to parse Slate JSON:', e);
+
     return createEmptySlateValue();
   }
 };
