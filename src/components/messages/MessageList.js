@@ -97,7 +97,33 @@ function MessageList({
   const rowVirtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 80, // Estimated height of a message
+    estimateSize: index => {
+      const item = items[index];
+      if (item.type === 'date-header') {
+        return 60; // Date header height
+      }
+
+      // Calculate spacing based on message properties
+      const message = item.message;
+      const nextItem = items[index + 1];
+      const nextMessage = nextItem?.type === 'message' ? nextItem.message : null;
+
+      const hasReactions = message.reactions && Object.keys(message.reactions).length > 0;
+      const isForwarded = message.isForwarded;
+      const isGrouped = nextMessage && nextMessage.senderId === message.senderId;
+
+      // Base message height
+      let height = 80;
+
+      // Add spacing based on content and grouping
+      if (isGrouped) {
+        height += hasReactions || isForwarded ? 24 : 16; // pb-6 or pb-4
+      } else {
+        height += hasReactions || isForwarded ? 32 : 24; // pb-8 or pb-6
+      }
+
+      return height;
+    },
     overscan: 5,
   });
 
@@ -168,15 +194,15 @@ function MessageList({
           const hasReactions = message.reactions && Object.keys(message.reactions).length > 0;
           const isForwarded = message.isForwarded;
 
-          // Determine margin based on grouping, reactions, and forwarded status
-          // Ensure there's always adequate spacing to prevent overlap
-          let marginClass = 'mb-6'; // default spacing for different senders
+          // Determine padding based on grouping, reactions, and forwarded status
+          // Use padding instead of margin for absolute positioning
+          let paddingClass = 'pb-6'; // default spacing for different senders
           if (isGrouped) {
             // Same sender back-to-back messages need spacing too
-            marginClass = hasReactions || isForwarded ? 'mb-6' : 'mb-4';
+            paddingClass = hasReactions || isForwarded ? 'pb-6' : 'pb-4';
           } else if (hasReactions || isForwarded) {
             // Different sender with reactions/forwarded needs more space
-            marginClass = 'mb-8';
+            paddingClass = 'pb-8';
           }
 
           return (
@@ -189,7 +215,7 @@ function MessageList({
                 width: '100%',
                 transform: `translateY(${virtualItem.start}px)`,
               }}
-              className={marginClass}
+              className={paddingClass}
             >
               <MessageCard
                 message={message}
