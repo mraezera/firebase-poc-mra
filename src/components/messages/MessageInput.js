@@ -219,7 +219,22 @@ function MessageInput({ onSendMessage, replyTo, onCancelReply, conversationId })
 
       // Reset editor by changing key (forces remount)
       setEditorValue(createEmptySlateValue());
-      setEditorKey(prev => prev + 1);
+      const newKey = editorKey + 1;
+      setEditorKey(newKey);
+
+      // Focus editor after it remounts
+      setTimeout(() => {
+        if (editorRef.current) {
+          try {
+            const editor = editorRef.current.getEditor();
+            ReactEditor.focus(editor);
+            const end = { path: [0, 0], offset: 0 };
+            editor.selection = { anchor: end, focus: end };
+          } catch (err) {
+            console.error('Error focusing editor after send:', err);
+          }
+        }
+      }, 100);
 
       // Clear attachments
       selectedImages.forEach(img => URL.revokeObjectURL(img.preview));

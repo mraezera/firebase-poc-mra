@@ -21,7 +21,7 @@ const RichTextEditor = React.forwardRef(
     // Size configurations based on variant
     const sizes = {
       default: {
-        containerMinHeight: '44px',
+        containerMinHeight: '40px',
         editableMinHeight: '20px',
         editableMaxHeight: '100px',
       },
@@ -37,22 +37,18 @@ const RichTextEditor = React.forwardRef(
     const renderLeaf = useCallback(props => <Leaf {...props} />, []);
     const renderElement = useCallback(props => <Element {...props} />, []);
 
-      // Use requestAnimationFrame for better timing
-      requestAnimationFrame(() => {
-        try {
-          ReactEditor.focus(editor);
-          // Move cursor to the end of the content
-          const end = Editor.end(editor, []);
-          editor.selection = { anchor: end, focus: end };
-        } catch (err) {
-          console.error('Failed to focus Slate editor:', err);
-          // Fallback to direct DOM focus
+    const handleContainerClick = useCallback(
+      e => {
+        e.preventDefault();
+        // Use requestAnimationFrame for better timing
+        requestAnimationFrame(() => {
           try {
             ReactEditor.focus(editor);
             // Move cursor to the end of the content
             const end = Editor.end(editor, []);
             editor.selection = { anchor: end, focus: end };
           } catch (err) {
+            console.error('Failed to focus Slate editor:', err);
             // Fallback to direct DOM focus
             try {
               if (editableRef.current) {
@@ -67,63 +63,32 @@ const RichTextEditor = React.forwardRef(
       [editor]
     );
 
-  const handleContainerKeyDown = useCallback(
-    e => {
-      // Only handle Enter or Space if the container itself is focused (not the editor)
-      // This prevents interfering with typing in the editor
-      if ((e.key === 'Enter' || e.key === ' ') && e.target !== editableRef.current) {
-        e.preventDefault();
-        handleContainerClick(e);
+    const handleKeyDown = event => {
+      // Submit on Enter (without Shift)
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault();
+        onSubmit();
       }
-    },
-    [handleContainerClick]
-  );
-
-  const handleKeyDown = event => {
-    // Submit on Enter (without Shift)
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault();
-      onSubmit();
-
-        return;
-      }
-
       // Bold
-      if (event.ctrlKey && event.key === 'b') {
+      else if (event.ctrlKey && event.key === 'b') {
         event.preventDefault();
         toggleMark(editor, 'bold');
-
-        return;
       }
-
       // Italic
-      if (event.ctrlKey && event.key === 'i') {
+      else if (event.ctrlKey && event.key === 'i') {
         event.preventDefault();
         toggleMark(editor, 'italic');
-
-        return;
       }
     };
 
-  return (
-    <div
-      role='textbox'
-      tabIndex={0}
-      onMouseDown={handleContainerClick}
-      onKeyDown={handleContainerKeyDown}
-      aria-label={placeholder || 'Text editor'}
-      aria-multiline='true'
-      className={clsx(
-        'w-full px-4 py-3 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
-        isFocused && 'ring-2 ring-primary border-transparent'
-      )}
-      style={{ minHeight: sizeConfig.containerMinHeight }}
-    >
-      <Slate
-        key={editorKey}
-        editor={editor}
-        initialValue={initialValue}
-        onChange={onChange}
+    return (
+      <div
+        onMouseDown={handleContainerClick}
+        className={clsx(
+          'w-full px-4 py-2 bg-gray-100 border border-gray-200 rounded-xl transition-all cursor-text',
+          isFocused && 'ring-2 ring-primary border-transparent'
+        )}
+        style={{ minHeight: sizeConfig.containerMinHeight }}
       >
         <Slate
           key={editorKey}
@@ -139,13 +104,14 @@ const RichTextEditor = React.forwardRef(
             onKeyDown={handleKeyDown}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
+            autoFocus={true}
             style={{
               outline: 'none',
               minHeight: sizeConfig.editableMinHeight,
               maxHeight: sizeConfig.editableMaxHeight,
               overflowY: 'auto',
-              paddingTop: '10px',
-              paddingBottom: '10px',
+              paddingTop: '2px',
+              paddingBottom: '2px',
               flex: 1,
             }}
           />
@@ -257,6 +223,8 @@ export const jsonToSlate = jsonString => {
 
     return Array.isArray(parsed) && parsed.length > 0 ? parsed : createEmptySlateValue();
   } catch (e) {
+    console.error('Failed to parse Slate JSON:', e);
+
     return createEmptySlateValue();
   }
 };
