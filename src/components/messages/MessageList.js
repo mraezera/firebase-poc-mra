@@ -164,14 +164,15 @@ function MessageList({
           const isGrouped =
             nextMessage && nextMessage.senderId === message.senderId && !shouldShowDateHeader(nextMessage, message);
 
-          // Check if message has reactions to add extra spacing
+          // Check if message has reactions or is forwarded to add extra spacing
           const hasReactions = message.reactions && Object.keys(message.reactions).length > 0;
+          const isForwarded = message.isForwarded;
 
-          // Determine margin based on grouping and reactions
+          // Determine margin based on grouping, reactions, and forwarded status
           let marginClass = 'mb-6'; // default spacing
           if (isGrouped) {
-            marginClass = hasReactions ? 'mb-4' : 'mb-2';
-          } else if (hasReactions) {
+            marginClass = hasReactions || isForwarded ? 'mb-4' : 'mb-2';
+          } else if (hasReactions || isForwarded) {
             marginClass = 'mb-8';
           }
 
